@@ -30,10 +30,6 @@ public class Circuit {
     // Constructor for single entity circuits
     public Circuit(Entity entity) {
 
-        
-
-
-
         // Create a new circuit containing this entity
 
         this.juncs = new List<WireJunction>();
@@ -48,6 +44,8 @@ public class Circuit {
             WireSegment seg = new WireSegment(entity.rootTile);
             segments.Add(seg);
         }
+
+        checkForNeighbourCircuits(this);
 
 
     }
@@ -73,7 +71,7 @@ public class Circuit {
 
             if (t.installedEntity != null && t.installedEntity.circuit != null) {
                 // Merge the circuits - add this construction to the already constructed circuit
-                CircuitController.instance.mergeCircuits(t.installedEntity.circuit, this);
+                newCirc = CircuitController.instance.appendCircuit(t.installedEntity.circuit, entity);
 
             }
 
@@ -114,17 +112,18 @@ public class Circuit {
 
             allSegmentTiles.Add(startTile);
 
+            startTile.wireSegment = this;
 
             // Check neighbour tiles for other segments and join if found
-            Tile[] neighbours = tile.getNeighbouringTiles();
+            //Tile[] neighbours = tile.getNeighbouringTiles();
 
-            foreach(Tile t in neighbours) {
-                if(t.installedEntity != null && t.installedEntity.entityType == EntityType.WirePiece) {
-                    // Found a neighbouring wire piece, join this segment to it
+            //foreach(Tile t in neighbours) {
+            //    if(t.installedEntity != null && t.installedEntity.entityType == EntityType.WirePiece) {
+            //        // Found a neighbouring wire piece, join this segment to it
 
-                }
+            //    }
 
-            }
+            //}
 
 
 
@@ -140,6 +139,34 @@ public class Circuit {
             Vector3Int diff = end - start;
 
             return Mathf.Abs(diff.x) + Mathf.Abs(diff.z);
+
+        }
+
+        // Add a single wire piece to the start or end of a segment (entity must be wire)
+        public void appendSegment(Entity entity) {
+
+            if(entity.entityType != EntityType.WirePiece) {
+                Debug.LogError("Trying to add a non wire entity to wire segment! -- " + entity.ToString());
+            }
+
+            
+
+            if (startTile == entity.rootTile) {
+                // Appending to start of wire 
+                startTile = entity.rootTile;
+                allSegmentTiles.Add(entity.rootTile);
+            }
+            else if (endTile == entity.rootTile) {
+                // Appending to start of wire 
+                endTile = entity.rootTile;
+                allSegmentTiles.Add(entity.rootTile);
+            }
+            else {
+                // Segment was not joining on the start/end - must create junction instead
+
+
+            }
+            
 
         }
         

@@ -67,7 +67,10 @@ public class Entity {
 
     // The circuit that contains this entity
     public Circuit circuit;
-    
+    // Wire segment that contains this entity (if wire)
+    public Circuit.WireSegment wireSegment;
+    // If this entity is a wire junction
+    public Circuit.WireJunction wireJunction;
 
     public class Terminal {
         // Entity this terminal is attached to 
