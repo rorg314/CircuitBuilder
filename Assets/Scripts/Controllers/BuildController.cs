@@ -98,7 +98,11 @@ public class BuildController : MonoBehaviour {
                 // Create the wirepiece for this wire
 
             }
+            // Create the circuit for this entity, and merge with surrounding
+            // Create a new circuit for this entity (only when building) - will merge with any surrounding circuits if found
+            entity.circuit = new Circuit(entity);
             
+
         }
         // Trying to build but cant - 
         if (!canBuild) {

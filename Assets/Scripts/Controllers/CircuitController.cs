@@ -6,34 +6,53 @@ public class CircuitController : MonoBehaviour {
 
     public static CircuitController instance;
 
+    public List<Circuit> allCircuits;
 
     // Start is called before the first frame update
     void Start() {
 
         instance = this;
+        allCircuits = new List<Circuit>();
+    }
+
+    public List<Entity> getNeighbourComponentEntities(List<Tile> neighbourTiles) {
+
+        List<Entity> neighbourComponents = new List<Entity>();
+        foreach (Tile t in neighbourTiles) {
+            // Check if neighbour contains any wiresegments
+            if (t.installedEntity != null && t.installedEntity.entityType == EntityType.Component) {
+                neighbourComponents.Add(t.installedEntity);
+            }
+        }
+
+        return neighbourComponents;
 
     }
 
+    public List<Circuit.WireSegment> getNeighbourWireSegments(List<Tile> neighbourTiles) {
 
-    // Use to append a single circuit entity to an existing circuit
-    public Circuit appendCircuit(Circuit baseCirc, Entity entity) {
-
-        // Append a single wire piece to the circuit
-        if(entity.entityType == EntityType.WirePiece) {
-            Tile[] neighbours = entity.rootTile.getNeighbouringTiles();
-
-            foreach(Tile t in neighbours) {
-                // Check if neighbour contains any wiresegments
-                if(t.wireSegment != null) {
-
-                    
-
-                }
-
+        List<Circuit.WireSegment> neighbourSegments = new List<Circuit.WireSegment>();
+        foreach (Tile t in neighbourTiles) {
+            // Check if neighbour contains any wiresegments
+            if (t.installedEntity != null && t.installedEntity.wireSegment != null) {
+                neighbourSegments.Add(t.installedEntity.wireSegment);
             }
-
         }
-        
+
+        return neighbourSegments;
+    }
+
+    public List<Circuit> getNeighbourCircuits(List<Tile> neighbourTiles) {
+
+        List<Circuit> neighbourCircs = new List<Circuit>();
+        foreach (Tile t in neighbourTiles) {
+            if (t.installedEntity != null && t.installedEntity.circuit != null) {
+                // Append to neighbour circs
+                neighbourCircs.Add(t.installedEntity.circuit);
+            }
+        }
+
+        return neighbourCircs;
 
     }
 
@@ -51,7 +70,9 @@ public class CircuitController : MonoBehaviour {
 
             foreach(Circuit.WireSegment joinSeg in mergeCirc.segments) {
                 // Check if segments overlap or are adjacent 
-                foreach(Tile baseTile in baseSeg.allSegmentTiles)
+                foreach(Tile baseTile in baseSeg.allSegmentTiles) {
+
+                }
 
             }
 
@@ -62,6 +83,7 @@ public class CircuitController : MonoBehaviour {
         baseCirc.segments.AddRange(mergeCirc.segments);
         baseCirc.juncs.AddRange(mergeCirc.juncs);
 
+        return baseCirc;
     }
 
 

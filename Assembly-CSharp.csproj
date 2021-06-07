@@ -81,13 +81,13 @@
     <Compile Include="Assets\Scripts\Controllers\MasterController.cs" />
     <Compile Include="Assets\Scripts\Controllers\TileController.cs" />
     <Compile Include="Assets\Scripts\DataClasses\Circuit.cs" />
+    <Compile Include="Assets\Scripts\Controllers\CircuitController.cs" />
     <Compile Include="Assets\CodeMonkey\MonoBehaviours\ComponentActions.cs" />
     <Compile Include="Assets\CodeMonkey\Utils\UI_Sprite.cs" />
     <Compile Include="Assets\Scripts\Controllers\UiController.cs" />
     <Compile Include="Assets\CodeMonkey\Utils\UI_BarMultiple.cs" />
     <Compile Include="Assets\CodeMonkey\CMDebug.cs" />
     <Compile Include="Assets\CodeMonkey\Utils\FunctionPeriodic.cs" />
-    <Compile Include="Assets\Scripts\Controllers\CircuitController.cs" />
   </ItemGroup>
   <ItemGroup>
      <None Include="Assets\CodeMonkey\README.txt" />

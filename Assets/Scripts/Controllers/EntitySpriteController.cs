@@ -98,7 +98,7 @@ public class EntitySpriteController : MonoBehaviour {
 
         //Add sprite component
         SpriteRenderer sr = entity_go.AddComponent<SpriteRenderer>();
-        Tile[] neighbours = null;
+        List<Tile> neighbours = new List<Tile>();
         // Update neighbours
         if (entity.entityType == EntityType.WirePiece) {
             neighbours = entity.rootTile.getNeighbouringTiles();
@@ -185,7 +185,7 @@ public class EntitySpriteController : MonoBehaviour {
 
         if (entity.entityType == EntityType.WirePiece) {
             // Update neighbour wires
-            Tile[] neighbours = entity.rootTile.getNeighbouringTiles();
+            List<Tile> neighbours = entity.rootTile.getNeighbouringTiles();
             updateNeighbourWires(neighbours);
         }
 
@@ -272,7 +272,7 @@ public class EntitySpriteController : MonoBehaviour {
     
 
     // Update all the neighbouring wires 
-    public void updateNeighbourWires(Tile[] neighbours) {
+    public void updateNeighbourWires(List<Tile> neighbours) {
         
         foreach(Tile t in neighbours) {
             if(t == null) {
@@ -303,7 +303,7 @@ public class EntitySpriteController : MonoBehaviour {
         int W = 0001;
         int[] ints = { N, E, S, W };
 
-        Tile[] neighbourTiles = rootTile.getNeighbouringTiles();
+        List<Tile> neighbourTiles = rootTile.getNeighbouringTiles();
 
         int neighbourCode = 0;
         for (int i = 0; i < 4; i++) {

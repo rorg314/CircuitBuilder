@@ -16,9 +16,9 @@ public class Tile {
     public Entity installedEntity { get; set; }
 
     // Defines this tile as a wire junction
-    public Circuit.WireJunction wireJunction;
+    //public Circuit.WireJunction wireJunction;
     // The wire segment that contains this tile 
-    public Circuit.WireSegment wireSegment;
+    //public Circuit.WireSegment wireSegment;
 
 
     public Tile(TileGrid<Tile> grid, int x, int z) {
@@ -43,14 +43,15 @@ public class Tile {
     }
 
     //Returns array of tiles in NESW order (no diagonal)
-    public Tile[] getNeighbouringTiles() {
-        //North tile:
-        Tile northTile = tileGrid.GetGridObject(this.x, this.z + 1);
-        Tile eastTile = tileGrid.GetGridObject(this.x + 1, this.z);
-        Tile southTile = tileGrid.GetGridObject(this.x, this.z - 1);
-        Tile westTile = tileGrid.GetGridObject(this.x - 1, this.z);
+    public List<Tile> getNeighbouringTiles() {
+        List<Tile> neighbours = new List<Tile>();
+        
+        neighbours.Add(tileGrid.GetGridObject(this.x, this.z + 1));
+        neighbours.Add(tileGrid.GetGridObject(this.x + 1, this.z));
+        neighbours.Add(tileGrid.GetGridObject(this.x, this.z - 1));
+        neighbours.Add(tileGrid.GetGridObject(this.x - 1, this.z));
 
-        return new Tile[] { northTile, eastTile, southTile, westTile };
+        return neighbours;
 
     }
 

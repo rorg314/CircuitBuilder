@@ -187,8 +187,6 @@ public class Entity {
         entity.cantBuild = cantBuild;
         entity.buildDir = buildDir;
 
-        // Create a new circuit for this entity - will merge with any surrounding circuits if found
-        entity.circuit = new Circuit(entity);
 
 
         //if (cantBuild == false) {
@@ -237,7 +235,7 @@ public class Entity {
     }
 
     // Gets surrounding tiles for an entity (double radius to include two rows of tiles)
-    public Tile[] getSurroundingTiles(bool doubleRadius) {
+    public List<Tile> getSurroundingTiles(bool doubleRadius) {
 
         List<Tile> tiles = new List<Tile>();
         Vector3Int rootCoords = rootTile.getTileCoordinates();
@@ -277,7 +275,7 @@ public class Entity {
 
         }
 
-        return tiles.ToArray();
+        return tiles;
     }
 
 
