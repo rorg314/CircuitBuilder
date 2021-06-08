@@ -13,8 +13,7 @@ public class Circuit {
     public List<Entity> entities;
     
 
-    // Entities that comprise this wire 
-    public List<Entity> wireEntities;
+    
 
     // A circuit is equivalent to a closed node graph with directed edges 
     // Any newly created entity spawns a new circuit - will be merged into other circuits 
@@ -133,8 +132,8 @@ public class Circuit {
 
     }
 
-    // Segment spans from start to end tile - either could be junction
-    // Wire segment is graph edge
+    // Segment spans from start to end tile - can be next to a junction tile
+    // Segment is graph edge
     public class WireSegment {
         // Circuit this wire segment belongs to
         public Circuit parentCircuit;
@@ -148,17 +147,18 @@ public class Circuit {
         public List<Tile> allSegmentTiles;
 
         // PHYSICS //
-        // Voltage accross wire ends - only changed when end meets a component -> out wire has lower voltage
-        public float voltage;
-        // Current through this wire segment
+        // Voltage accross segment ends
+        public float startVoltage;
+        public float endVoltage;
+        // Current through this segment
         public float current;
 
-        // Construct a single wire segment piece - circuit reference set outside constructor
-        public WireSegment(Tile tile) {
+        // Construct a single circuit segment - circuit reference set outside constructor
+        public WireSegment(Tile rootTile) {
 
             // Segment is directed based on current flow - from start (pos) to end (neg) tile  
-            this.startTile = tile;
-            this.endTile = tile;
+            this.startTile = rootTile;
+            this.endTile = rootTile;
             // Segment length
             this.length = this.getSegmentLength();
 
@@ -169,8 +169,8 @@ public class Circuit {
             
 
             // Add the references to the wire segment on the entity
-            if(tile.installedEntity != null) {
-                tile.installedEntity.wireSegment = this;
+            if(rootTile.installedEntity != null) {
+                rootTile.installedEntity.wireSegment = this;
 
             }
             else { Debug.LogError("Trying to create wire segment with no installed entity!"); }
@@ -242,7 +242,7 @@ public class Circuit {
     }
 
     // Defines a closed loop in the circuit - contains segments, junctions and components in the loop
-    public class WireLoop {
+    public class CircuitLoop {
 
         // All segments within this loop
         List<WireSegment> loopSegments;

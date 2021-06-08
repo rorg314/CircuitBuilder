@@ -188,11 +188,6 @@ public class Entity {
         entity.buildDir = buildDir;
 
 
-
-        //if (cantBuild == false) {
-        //    entity.registerInstalledTiles();
-        //}
-
         return entity;
     }
 
