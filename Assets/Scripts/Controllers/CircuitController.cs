@@ -29,9 +29,9 @@ public class CircuitController : MonoBehaviour {
 
     }
 
-    public List<Circuit.WireSegment> getNeighbourWireSegments(List<Tile> neighbourTiles) {
+    public List<Circuit.CircuitSegment> getNeighbourWireSegments(List<Tile> neighbourTiles) {
 
-        List<Circuit.WireSegment> neighbourSegments = new List<Circuit.WireSegment>();
+        List<Circuit.CircuitSegment> neighbourSegments = new List<Circuit.CircuitSegment>();
         foreach (Tile t in neighbourTiles) {
             // Check if neighbour contains any wiresegments
             if (t.installedEntity != null && t.installedEntity.wireSegment != null) {
@@ -66,9 +66,9 @@ public class CircuitController : MonoBehaviour {
         
         
         // Join any connected wire segments
-        foreach(Circuit.WireSegment baseSeg in baseCirc.segments) {
+        foreach(Circuit.CircuitSegment baseSeg in baseCirc.segments) {
 
-            foreach(Circuit.WireSegment joinSeg in mergeCirc.segments) {
+            foreach(Circuit.CircuitSegment joinSeg in mergeCirc.segments) {
                 // Check if segments overlap or are adjacent 
                 foreach(Tile baseTile in baseSeg.allSegmentTiles) {
 

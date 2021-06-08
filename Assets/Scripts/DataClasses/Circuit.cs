@@ -8,7 +8,7 @@ public class Circuit {
     // Junctions in the circuit
     public List<WireJunction> juncs;
     // Wire segments
-    public List<WireSegment> segments;
+    public List<CircuitSegment> segments;
     // All entities in circuit
     public List<Entity> entities;
     
@@ -17,7 +17,7 @@ public class Circuit {
 
     // A circuit is equivalent to a closed node graph with directed edges 
     // Any newly created entity spawns a new circuit - will be merged into other circuits 
-    public Circuit(List<WireSegment> segments, List<WireJunction> junctions, List<Entity> components) { 
+    public Circuit(List<CircuitSegment> segments, List<WireJunction> junctions, List<Entity> components) { 
         
         this.juncs = junctions;
         this.segments = segments;
@@ -31,7 +31,7 @@ public class Circuit {
         // Create a new circuit containing this entity
 
         this.juncs = new List<WireJunction>();
-        this.segments = new List<WireSegment>();
+        this.segments = new List<CircuitSegment>();
         this.entities = new List<Entity>();
 
         this.entities.Add(entity);
@@ -58,7 +58,7 @@ public class Circuit {
             
             if (entity.entityType == EntityType.WirePiece) {
                 // Create a single piece long wire segment and add to circuit
-                WireSegment seg = new WireSegment(entity.rootTile);
+                CircuitSegment seg = new CircuitSegment(entity.rootTile);
                 segments.Add(seg);
                 // Set reference on entity to this segment
                 entity.wireSegment = seg;
@@ -79,7 +79,7 @@ public class Circuit {
         if (entity.entityType == EntityType.WirePiece) {
             List<Tile> neighbours = entity.rootTile.getNeighbouringTiles();
 
-            List<WireSegment> neighbourSegments = CircuitController.instance.getNeighbourWireSegments(neighbours);
+            List<CircuitSegment> neighbourSegments = CircuitController.instance.getNeighbourWireSegments(neighbours);
 
             if(neighbourSegments.Count == 0) {
                 // Did not find any neighbour segments - check if wire adjacent to component
@@ -90,7 +90,7 @@ public class Circuit {
                 if(neighbourComponents.Count == 1) {
                     // Create and add the wire segment to the circuit - only if circuit of found component matches the circuit appending to
                     if(neighbourComponents[0].circuit == this) {
-                        WireSegment seg = new WireSegment(entity.rootTile);
+                        CircuitSegment seg = new CircuitSegment(entity.rootTile);
                     }
                 }
                 if(neighbourComponents.Count > 1) {
@@ -134,7 +134,7 @@ public class Circuit {
 
     // Segment spans from start to end tile - can be next to a junction tile
     // Segment is graph edge
-    public class WireSegment {
+    public class CircuitSegment {
         // Circuit this wire segment belongs to
         public Circuit parentCircuit;
         
@@ -154,7 +154,7 @@ public class Circuit {
         public float current;
 
         // Construct a single circuit segment - circuit reference set outside constructor
-        public WireSegment(Tile rootTile) {
+        public CircuitSegment(Tile rootTile) {
 
             // Segment is directed based on current flow - from start (pos) to end (neg) tile  
             this.startTile = rootTile;
@@ -230,13 +230,13 @@ public class Circuit {
     public class WireJunction {
 
         // Segments flowing into this junction (ending at this junction)
-        public List<WireSegment> inSegs;
+        public List<CircuitSegment> inSegs;
         // Segs flowing out - starting at this junc
-        public List<WireSegment> outSegs;
+        public List<CircuitSegment> outSegs;
         // Total current flowing through this junction
         public float totalCurrent;
         // Maps each segment to the respective current 
-        public Dictionary<WireSegment, float> juncSegmentCurrentDict;
+        public Dictionary<CircuitSegment, float> juncSegmentCurrentDict;
 
 
     }
@@ -245,7 +245,7 @@ public class Circuit {
     public class CircuitLoop {
 
         // All segments within this loop
-        List<WireSegment> loopSegments;
+        List<CircuitSegment> loopSegments;
         // All junctions this loop covers
         List<WireJunction> loopJunctions;
         // All components within this loop
