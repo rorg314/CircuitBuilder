@@ -29,13 +29,13 @@ public class CircuitController : MonoBehaviour {
 
     }
 
-    public List<Circuit.CircuitSegment> getNeighbourWireSegments(List<Tile> neighbourTiles) {
+    public List<Circuit.CircuitSegment> getNeighbourCircuitSegments(List<Tile> neighbourTiles) {
 
         List<Circuit.CircuitSegment> neighbourSegments = new List<Circuit.CircuitSegment>();
         foreach (Tile t in neighbourTiles) {
             // Check if neighbour contains any wiresegments
-            if (t.installedEntity != null && t.installedEntity.wireSegment != null) {
-                neighbourSegments.Add(t.installedEntity.wireSegment);
+            if (t.installedEntity != null && t.installedEntity.circSegment != null) {
+                neighbourSegments.Add(t.installedEntity.circSegment);
             }
         }
 

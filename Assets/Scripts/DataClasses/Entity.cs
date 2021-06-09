@@ -68,7 +68,7 @@ public class Entity {
     // The circuit that contains this entity
     public Circuit circuit;
     // Wire segment that contains this entity (if wire)
-    public Circuit.CircuitSegment wireSegment;
+    public Circuit.CircuitSegment circSegment;
     // If this entity is a wire junction
     public Circuit.WireJunction wireJunction;
 
