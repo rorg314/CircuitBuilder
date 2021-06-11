@@ -113,10 +113,10 @@ public class UiController : MonoBehaviour {
             terminal_go.transform.localScale = new Vector3(TileController.instance.cellSize, TileController.instance.cellSize, 1f);
 
             if (i == 0) {
-                terminal_go.transform.position = TileController.instance.tileGrid.GetWorldPosition(entity.rootTile.getTileCoordinates() + entity.posTileOffset) + TileController.instance.tileCentreOffset;
+                terminal_go.transform.position = entity.posTerminal.terminalTile.getTileWorldPositon() + TileController.instance.tileCentreOffset;
             }
             else { 
-                terminal_go.transform.position = TileController.instance.tileGrid.GetWorldPosition(entity.rootTile.getTileCoordinates() + entity.negTileOffset) + TileController.instance.tileCentreOffset;
+                terminal_go.transform.position = entity.negTerminal.terminalTile.getTileWorldPositon() + TileController.instance.tileCentreOffset;
             }
             
             terminal_go.transform.Rotate(90, 0, 0, Space.Self);

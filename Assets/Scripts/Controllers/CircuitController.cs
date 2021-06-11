@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
+
 
 public class CircuitController : MonoBehaviour {
 
@@ -8,11 +10,53 @@ public class CircuitController : MonoBehaviour {
 
     public List<Circuit> allCircuits;
 
+    // Show debug vectors on circuit segments
+    [HideInInspector]
+    public bool showDebug;
+    
+    public Sprite debugArrowSprite;
+
+    public event Action<Circuit> cbOnCircuitChanged;
+
     // Start is called before the first frame update
     void Start() {
 
         instance = this;
         allCircuits = new List<Circuit>();
+        showDebug = true;
+
+        if (showDebug) {
+
+            cbOnCircuitChanged += drawCircuitDebug;
+
+        }
+
+    }
+
+    public void triggerCircuitChanged(Circuit circ) {
+        
+        cbOnCircuitChanged?.Invoke(circ);
+
+    }
+
+    public void drawCircuitDebug(Circuit circ) {
+
+        foreach(Circuit.CircuitSegment seg in circ.segments) {
+            Vector3 dir = seg.endTile.getTileWorldPositon() - seg.startTile.getTileWorldPositon();
+            Vector3 startPos = seg.startTile.getTileWorldPositon() + TileController.instance.tileCentreOffset;
+            //Debug.DrawRay(seg.startTile.getTileWorldPositon() + TileController.instance.tileCentreOffset, dir , Color.red, Mathf.Infinity);
+            //Debug.Log("drew");
+            //DrawArrow.ForDebug(startPos, dir, Color.red);
+
+            GameObject segArrow = new GameObject();
+
+            seg.debugArrow = segArrow;
+
+            SpriteRenderer sr = segArrow.AddComponent<SpriteRenderer>();
+            sr.sprite = debugArrowSprite;
+            
+        }
+
     }
 
     public List<Entity> getNeighbourComponentEntities(List<Tile> neighbourTiles) {

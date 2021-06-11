@@ -136,6 +136,25 @@ public class TileController : MonoBehaviour {
         return dir;
     }
 
+
+    public Tile getAdjacentTileInDir(Tile start, Dir dir) {
+
+        Vector3Int startXZ = start.getTileCoordinates();
+
+        switch (dir) {
+            case Dir.N:
+                return tileGrid.GetGridObject(startXZ.x, start.z + 1);
+            case Dir.E:
+                return tileGrid.GetGridObject(startXZ.x + 1, start.z); 
+            case Dir.S:
+                return tileGrid.GetGridObject(startXZ.x, start.z - 1);
+            case Dir.W:
+                return tileGrid.GetGridObject(startXZ.x - 1, start.z);
+            default:
+                return start;
+        }
+
+    }
     
 
 

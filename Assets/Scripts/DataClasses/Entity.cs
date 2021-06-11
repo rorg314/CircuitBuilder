@@ -21,8 +21,14 @@ public class Entity {
     //Acts as pivot, always in bottom left corner
     public Tile rootTile { get; set; }
     //Defines the positive and negative terminal locations of this entity 
-    public Vector3Int posTileOffset;
-    public Vector3Int negTileOffset;
+    //public Vector3Int posTileOffset;
+    //public Vector3Int negTileOffset;
+
+    public Terminal posTerminal;
+    public Terminal negTerminal;
+    public Terminal[] terminals;
+
+
     // Dir pos terminal is facing
     public Dir posDir;
     // Dir neg terminal is facing
@@ -79,6 +85,10 @@ public class Entity {
         public Charge charge;
         // Terminal offset from the entity root
         public Vector3Int terminalOffset;
+        // Tile of the terminal
+        public Tile terminalTile;
+        // Tile that will cause a wire to connect
+        public Tile connectTile;
         // Terminal direction
         public Dir terminalDir;
 
@@ -87,8 +97,36 @@ public class Entity {
             this.charge = charge;
             this.terminalOffset = terminalOffset;
             this.terminalDir = terminalDir;
+            
+            //this.terminalTile = TileController.instance.tileGrid.GetGridObject(entity.rootTile.getTileCoordinates() + terminalOffset);
+            
+            //this.connectTile = getConnectionTile();
+        }
+
+        // Copy constructor for building instance from prototype
+        public Terminal(Entity newEntity, Terminal other) {
+            this.entity = newEntity;
+            this.charge = other.charge;
+            this.terminalOffset = other.terminalOffset;
+            this.terminalDir = other.terminalDir;
+
 
         }
+
+        public void setConnectionTile() {
+
+            Tile start = entity.rootTile;
+
+            connectTile = TileController.instance.getAdjacentTileInDir(start, terminalDir);
+
+        }
+
+        public void setTerminalTile() {
+
+            terminalTile = TileController.instance.tileGrid.GetGridObject(entity.rootTile.getTileCoordinates() + terminalOffset);
+
+        }
+
 
     }
     
@@ -116,13 +154,23 @@ public class Entity {
         this.Xspan = X;
         this.Zspan = Z;
         this.resistance = resistance;
-        this.posTileOffset = posT;
-        this.negTileOffset = negT;
-        this.posDir = posDir;
-        this.negDir = negDir;
+
+        // Terminals //
+
+        posTerminal = new Terminal(this, Charge.Pos, posT, posDir);
+        negTerminal = new Terminal(this, Charge.Neg, negT, negDir);
+        terminals = new Terminal[]{ posTerminal, negTerminal };
+        
+        //this.posTileOffset = posT;
+        //this.negTileOffset = negT;
+        //this.posDir = posDir;
+        //this.negDir = negDir;
+
+
+        // Set default build dir
         this.buildDir = Dir.N;
         
-        
+        // Calculate all tile offsets
         this.allTileOffsets = this.getTileOffsets();
 
     }
@@ -133,10 +181,17 @@ public class Entity {
         this.Xspan = X;
         this.Zspan = Z;
         this.resistance = resistance;
-        this.posTileOffset = posT;
-        this.negTileOffset = negT;
-        this.posDir = posDir;
-        this.negDir = negDir;
+
+        posTerminal = new Terminal(this, Charge.Pos, posT, posDir);
+        negTerminal = new Terminal(this, Charge.Neg, negT, negDir);
+        terminals = new Terminal[]{ posTerminal, negTerminal };
+
+        //this.posTileOffset = posT;
+        //this.negTileOffset = negT;
+        //this.posDir = posDir;
+        //this.negDir = negDir;
+
+
         this.buildDir = Dir.N;
         this.voltage = volts;
 
@@ -153,21 +208,27 @@ public class Entity {
         this.entityType = other.entityType;
         this.entityName = other.entityName;
         
+        //if(other.entityType == EntityType.Component) {
+        //    this.posTileOffset = other.posTileOffset;
+        //    this.negTileOffset = other.negTileOffset;
+        //    this.posDir = other.posDir;
+        //    this.negDir = other.negDir;
+        //}
+
         if(other.entityType == EntityType.Component) {
-            this.posTileOffset = other.posTileOffset;
-            this.negTileOffset = other.negTileOffset;
-            this.posDir = other.posDir;
-            this.negDir = other.negDir;
+
+            this.posTerminal = new Terminal(this, other.posTerminal);
+            this.negTerminal = new Terminal(this, other.negTerminal);
+            this.terminals = new Terminal[] { this.posTerminal, this.negTerminal};
+
         }
         
         this.allTileOffsets = other.allTileOffsets;
         // Must create new list to avoid reference persisting to old list on prototype
         this.terminalList_go = new List<GameObject>();
-        
-        
+                
         this.buildDir = other.buildDir;
         
-
         this.neighbourWiresString = other.neighbourWiresString;
     }
     
@@ -182,19 +243,23 @@ public class Entity {
         Entity entity = proto.Clone();
 
         entity.rootTile = rootTile;
+
+        // Set terminal tile info
+        if(entity.entityType == EntityType.Component) {
+            foreach (Terminal term in entity.terminals) {
+                term.setTerminalTile();
+                term.setConnectionTile();
+            }
+        }
         
         entity.isGhost = isGhost;
         entity.cantBuild = cantBuild;
         entity.buildDir = buildDir;
 
-
         return entity;
     }
 
    
-
-
-
 
     // Get the offsets for all covered grid points
     public List<Vector3Int> getTileOffsets() {
@@ -272,6 +337,8 @@ public class Entity {
 
         return tiles;
     }
+
+    
 
 
     public void registerInstalledTiles() {

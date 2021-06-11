@@ -242,8 +242,8 @@ public class EntitySpriteController : MonoBehaviour {
         // Rotate all tile offsets (pivots around old root)
         List<Vector3Int> newOffsets = new List<Vector3Int>();
 
-        Vector3Int oldPos = entity.posTileOffset;
-        Vector3Int oldNeg = entity.negTileOffset;
+        Vector3Int oldPos = entity.posTerminal.terminalOffset;
+        Vector3Int oldNeg = entity.negTerminal.terminalOffset;
 
         foreach (Vector3Int oldOffset in entity.allTileOffsets) {
 
@@ -259,10 +259,10 @@ public class EntitySpriteController : MonoBehaviour {
 
             // Check if this offset corresponds to terminal, and thus change the new terminal offset
             if(oldOffset == oldPos) {
-                entity.posTileOffset = newOffset;
+                entity.posTerminal.terminalOffset = newOffset;
             }
             if(oldOffset == oldNeg) {
-                entity.negTileOffset = newOffset;
+                entity.negTerminal.terminalOffset = newOffset;
             }
         }
 
@@ -320,23 +320,33 @@ public class EntitySpriteController : MonoBehaviour {
                     neighbourCode += ints[i];
                 }
                 if(t.installedEntity.entityType == EntityType.Component) {
-                    Vector3Int rootCoords = t.installedEntity.rootTile.getTileCoordinates();
-                    // Check pos terminal (probably want to streamline this)
-                    if (t.getTileCoordinates() == rootCoords + t.installedEntity.posTileOffset) {
-                        // Tile is pos terminal - check orientation from this tile matches terminal dir (opposite)
-                        Dir dir = TileController.instance.getNeighbourTileOrientation(rootTile, t);
-                        if(BuildController.instance.oppositeDir(dir) == t.installedEntity.posDir) {
-                            neighbourCode += ints[i];
-                        }
+                    
+                    // Check if this wire is on the connection tile
+                    if(t.installedEntity.posTerminal.connectTile == rootTile || t.installedEntity.negTerminal.connectTile == rootTile) {
+
+                        neighbourCode += ints[i];
+
                     }
-                    // Check neg terminal
-                    if (t.getTileCoordinates() == rootCoords + t.installedEntity.negTileOffset) {
-                        // Tile is neg terminal - check orientation from this tile matches terminal dir (opposite)
-                        Dir dir = TileController.instance.getNeighbourTileOrientation(rootTile, t);
-                        if (BuildController.instance.oppositeDir(dir) == t.installedEntity.negDir) {
-                            neighbourCode += ints[i];
-                        }
-                    }
+                    
+                    
+                    
+                    //Vector3Int rootCoords = t.installedEntity.rootTile.getTileCoordinates();
+                    //// Check pos terminal (probably want to streamline this)
+                    //if (t.getTileCoordinates() == rootCoords + t.installedEntity.posTileOffset) {
+                    //    // Tile is pos terminal - check orientation from this tile matches terminal dir (opposite)
+                    //    Dir dir = TileController.instance.getNeighbourTileOrientation(rootTile, t);
+                    //    if(BuildController.instance.oppositeDir(dir) == t.installedEntity.posDir) {
+                    //        neighbourCode += ints[i];
+                    //    }
+                    //}
+                    //// Check neg terminal
+                    //if (t.getTileCoordinates() == rootCoords + t.installedEntity.negTileOffset) {
+                    //    // Tile is neg terminal - check orientation from this tile matches terminal dir (opposite)
+                    //    Dir dir = TileController.instance.getNeighbourTileOrientation(rootTile, t);
+                    //    if (BuildController.instance.oppositeDir(dir) == t.installedEntity.negDir) {
+                    //        neighbourCode += ints[i];
+                    //    }
+                    //}
 
                 }
             }
