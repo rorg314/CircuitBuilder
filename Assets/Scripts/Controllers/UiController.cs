@@ -126,8 +126,8 @@ public class UiController : MonoBehaviour {
 
             entity.terminalList_go.Add(terminal_go);
 
-            sr.sortingLayerName = "Entities";
-            sr.sortingOrder = 1;
+            sr.sortingLayerName = "UI";
+            sr.sortingOrder = 0;
         }
         
 

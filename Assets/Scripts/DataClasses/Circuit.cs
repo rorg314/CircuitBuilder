@@ -12,20 +12,14 @@ public class Circuit {
     // Wire segments
     public List<CircuitSegment> segments;
     // All entities in circuit
-    public List<Entity> entities;
+    public List<Tile> allTiles;
     
 
     
 
     // A circuit is equivalent to a closed node graph with directed edges 
     // Any newly created entity spawns a new circuit - will be merged into other circuits 
-    public Circuit(List<CircuitSegment> segments, List<WireJunction> junctions, List<Entity> components) { 
-        
-        this.juncs = junctions;
-        this.segments = segments;
-        this.entities = components;
-
-    }
+    
 
     // Constructor for single entity circuits
     public Circuit(Entity entity) {
@@ -34,9 +28,23 @@ public class Circuit {
 
         this.juncs = new List<WireJunction>();
         this.segments = new List<CircuitSegment>();
-        this.entities = new List<Entity>();
+        this.allTiles = new List<Tile>();
 
+        // Create a new circuit - will be merged with others if found 
         
+        this.allTiles.Add(entity.rootTile);
+        entity.circuit = this;
+
+        if (entity.entityType == EntityType.WirePiece) {
+            // Create a single piece long wire segment and add to circuit
+            CircuitSegment seg = new CircuitSegment(entity);
+            segments.Add(seg);
+            // Set reference on entity to this segment
+            entity.circSegment = seg;
+            // Set references to parent circuit on segment (already set on entity)
+            seg.parentCircuit = this;
+        }
+
 
         Debug.Log("Number of circuits before: " + CircuitController.instance.allCircuits.Count);
 
@@ -44,31 +52,27 @@ public class Circuit {
         List<Circuit> neighbourCircs = checkForNeighbourCircuits(entity);
 
 
-        if (neighbourCircs.Count > 1) {
-            // Need to merge circuits
+        if (neighbourCircs.Count == 2) {
+            // Need to join two circuits - append to one then join
+            //appendCircuit(neighbourCircs[0], entity);
+            //entity.circuit = neighbourCircs[0];
 
+            Circuit baseCirc = appendCircuit(neighbourCircs[0], this, entity);
+            
+            CircuitController.instance.joinCircuits(baseCirc, neighbourCircs[1], entity.rootTile);
         }
 
         else if (neighbourCircs.Count == 1) {
             // Append to the existing circuit
-            appendCircuit(neighbourCircs[0], entity);
-            entity.circuit = neighbourCircs[0];
+            //appendCircuit(neighbourCircs[0], entity);
+
+            appendCircuit(neighbourCircs[0], this, entity);
+            
         }
 
         else if (neighbourCircs.Count == 0) {
-            // Create a new circuit
+            // Created a new standalone circuit
             CircuitController.instance.allCircuits.Add(this);
-            this.entities.Add(entity);
-            entity.circuit = this;
-            if (entity.entityType == EntityType.WirePiece) {
-                // Create a single piece long wire segment and add to circuit
-                CircuitSegment seg = new CircuitSegment(entity);
-                segments.Add(seg);
-                // Set reference on entity to this segment
-                entity.circSegment = seg;
-                // Set references to parent circuit on segment (already set on entity)
-                seg.parentCircuit = this;
-            }
 
             CircuitController.instance.triggerCircuitChanged(this);
         }
@@ -80,49 +84,21 @@ public class Circuit {
 
     }
     // Use to append a single entity to this existing circuit
-    public void appendCircuit(Circuit baseCirc, Entity entity) {
-        
+    public Circuit appendCircuit(Circuit baseCirc, Circuit appendCirc, Entity entity) {
 
-        // Append a single wire piece to the circuit
-        if (entity.entityType == EntityType.WirePiece) {
-            List<Tile> neighbours = entity.rootTile.getNeighbouringTiles();
+        // Get the tile in the base that this entity is appending to (returns first found)
+        Tile baseTile = CircuitController.instance.getBaseTile(baseCirc, entity.rootTile);
 
-            List<CircuitSegment> neighbourSegments = CircuitController.instance.getNeighbourCircuitSegments(neighbours);
-
-            if(neighbourSegments.Count == 0) {
-                // Did not find any neighbour segments - check if wire adjacent to component
-                List<Entity> neighbourComponents = CircuitController.instance.getNeighbourComponentEntities(neighbours);
-                if(neighbourComponents.Count == 0) {
-                    Debug.LogWarning("Found no nearby circuits to append to!");
-                }
-                if(neighbourComponents.Count == 1) {
-                    // Create and add the wire segment to the circuit - only if circuit of found component matches the circuit appending to
-                    if(neighbourComponents[0].circuit == baseCirc) {
-                        CircuitSegment seg = new CircuitSegment(entity);
-                    }
-                }
-                if(neighbourComponents.Count > 1) {
-                    // Append to one then merge
-                }
-
-            }
-            if(neighbourSegments.Count == 1) {
-                // Append the single wire piece
-                neighbourSegments[0].appendWirePiece(entity);
-            }
-
-        }
-
-        if(entity.entityType == EntityType.Component) {
-
-
-
-
-
-        }
+        // Join the circuits
+        CircuitController.instance.joinCircuits(baseCirc, appendCirc, baseTile);
+        // Add the reference to the base circuit on the entity
+        entity.circuit = baseCirc;
+        // Add the appended tile to the base circ
+        baseCirc.allTiles.Add(entity.rootTile);
 
         CircuitController.instance.triggerCircuitChanged(baseCirc);
 
+        return baseCirc;
     }
 
     // Check if a newly created circuit should be added to any surrounding circuits
@@ -147,6 +123,8 @@ public class Circuit {
         
 
     }
+
+    
 
     // Segment spans from start to end tile - can be next to a junction tile
     // Segment is graph edge
@@ -294,24 +272,6 @@ public class Circuit {
         List<Entity> loopComponents;
 
     }
-
-    // Merge two segments
-    //public WireSegment mergeSegments(WireSegment seg1, WireSegment seg2) {
-
-        
-    //    //if(seg1.startTile == seg2.startTile) {
-    //    //    joinTile = seg1.startTile;
-    //    //}
-    //    //if(seg1.startTile == seg2.endTile) {
-    //    //    joinTile = seg1.startTile;
-    //    //}
-    //    //if(seg1.endTile == seg2.startTile) {
-    //    //    joinTile = seg1.endTile;
-    //    //}
-    //    //if(seg1.endTile == seg2.endTile) {
-    //    //    joinTile = seg1.endTile;
-    //    //}
-
 
 
     //}

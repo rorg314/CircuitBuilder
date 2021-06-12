@@ -155,7 +155,29 @@ public class TileController : MonoBehaviour {
         }
 
     }
-    
+
+    // Use ONLY if there is a single common tile - if multiple found this will just return the first one
+    public Tile getCommonTile(List<Tile> list1, List<Tile> list2) {
+
+        if(list1.Count > list2.Count) {
+            foreach (Tile t in list2) {
+                if (list1.Contains(t)) {
+                    return t;
+                }
+            }
+        }
+        else {
+            foreach (Tile t in list1) {
+                if (list2.Contains(t)) {
+                    return t;
+                }
+            }
+        }
+
+        
+        // No common tile found
+        return null;
+    }
 
 
 
