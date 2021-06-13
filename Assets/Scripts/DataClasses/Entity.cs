@@ -73,10 +73,11 @@ public class Entity {
 
     // The circuit that contains this entity
     //public Circuit circuit;
-    // Wire segment that contains this entity (if wire)
-    public Circuit.CircuitSegment circSeg;
-    // If this entity is a wire junction
-    public Circuit.WireJunction wireJunction;
+    // Circuit segment that contains this entity 
+    public Circuit.Segment circSeg;
+    // If this entity is a junction
+    public Circuit.Junction circJunc;
+    
 
     public class Terminal {
         // Entity this terminal is attached to 
@@ -368,7 +369,7 @@ public class Entity {
     }
 
     public override string ToString() {
-        return entityName.ToString() + "\n_(" + rootTile.x.ToString() + ", " + rootTile.z.ToString() + ")";
+        return entityName.ToString() + "_(" + rootTile.x.ToString() + ", " + rootTile.z.ToString() + ")";
     }
 
     
