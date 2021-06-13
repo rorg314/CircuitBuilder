@@ -16,6 +16,9 @@ public class CircuitController : MonoBehaviour {
     
     public Sprite debugArrowSprite;
 
+    private Color[] debugColours = { Color.white, Color.red, Color.blue, Color.green, Color.cyan, Color.magenta, Color.black, Color.yellow };
+    private int lastColourIndex = 0;
+
     public event Action<Circuit> cbOnCircuitChanged;
 
     // Start is called before the first frame update
@@ -64,7 +67,8 @@ public class CircuitController : MonoBehaviour {
 
             SpriteRenderer sr = segArrow.AddComponent<SpriteRenderer>();
             sr.sprite = debugArrowSprite;
-
+            sr.color = debugColours[(lastColourIndex + 1) % (debugColours.Length-1)];
+            lastColourIndex++;
             sr.sortingLayerName = "UI";
             sr.sortingOrder = 0;
             
@@ -111,9 +115,9 @@ public class CircuitController : MonoBehaviour {
 
         List<Circuit> neighbourCircs = new List<Circuit>();
         foreach (Tile t in neighbourTiles) {
-            if (t.installedEntity != null && t.installedEntity.circuit != null) {
+            if (t.installedEntity != null && t.installedEntity.circSeg.circuit != null) {
                 // Append to neighbour circs
-                neighbourCircs.Add(t.installedEntity.circuit);
+                neighbourCircs.Add(t.installedEntity.circSeg.circuit);
             }
         }
 
@@ -125,9 +129,9 @@ public class CircuitController : MonoBehaviour {
 
         List<Circuit> neighbourCircs = new List<Circuit>();
         foreach (Tile t in neighbourTiles) {
-            if (t.installedEntity != null && t.installedEntity.circuit != null && t.installedEntity.circuit != thisCirc) {
+            if (t.installedEntity != null && t.installedEntity.circSeg != null && t.installedEntity.circSeg.circuit != thisCirc) {
                 // Append to neighbour circs
-                neighbourCircs.Add(t.installedEntity.circuit);
+                neighbourCircs.Add(t.installedEntity.circSeg.circuit);
             }
         }
 
@@ -158,8 +162,7 @@ public class CircuitController : MonoBehaviour {
 
         // Join the circuits
         joinCircuits(baseCirc, appendCirc, baseTile);
-        // Add the reference to the base circuit on the entity
-        entity.circuit = baseCirc;
+        
         // Add the appended tile to the base circ
         baseCirc.allTilesInCircuit.Add(entity.rootTile);
 
@@ -183,8 +186,14 @@ public class CircuitController : MonoBehaviour {
 
         }
 
+        // Change the circuit ref on the joined circuit segments to the base circuit
+        foreach(Tile t in joinCirc.allTilesInCircuit) {
+         
+            t.installedEntity.circSeg.circuit = baseCirc;
 
+        }
 
+        allCircuits.Remove(joinCirc);
         return baseCirc;
 
     }
@@ -195,7 +204,7 @@ public class CircuitController : MonoBehaviour {
         // Destroy any debug preview on the join seg
         Destroy(joinSeg.debugArrow);
         // Remove the join seg from its circuit master list 
-        joinSeg.parentCircuit.segments.Remove(joinSeg);
+        joinSeg.circuit.segments.Remove(joinSeg);
         // Replace the reference on all joinSegment tiles with the base segment
         foreach(Tile t in joinSeg.allSegmentTiles) {
             t.installedEntity.circSeg = baseSeg;
@@ -243,7 +252,7 @@ public class CircuitController : MonoBehaviour {
 
         baseSeg.length = baseSeg.getSegmentLength();
 
-        triggerCircuitChanged(baseSeg.parentCircuit);
+        triggerCircuitChanged(baseSeg.circuit);
 
     }
 
@@ -257,7 +266,7 @@ public class CircuitController : MonoBehaviour {
 
     public void splitSegment(Circuit.CircuitSegment baseSeg, Tile splitTile) {
 
-        baseSeg.parentCircuit.allTilesInCircuit.Remove(splitTile);
+        baseSeg.circuit.allTilesInCircuit.Remove(splitTile);
 
         int splitIndex = baseSeg.allSegmentTiles.IndexOf(splitTile);
         int baseCount = baseSeg.allSegmentTiles.Count;
@@ -268,9 +277,9 @@ public class CircuitController : MonoBehaviour {
         for (int i = splitIndex + 1; i < baseCount; i++) {
             newSegRange.Add(baseSeg.allSegmentTiles[i]);
             // Remove from the allTilesInCircuit list (avoids looping through twice)
-            baseSeg.parentCircuit.allTilesInCircuit.Remove(baseSeg.allSegmentTiles[i]);
+            baseSeg.circuit.allTilesInCircuit.Remove(baseSeg.allSegmentTiles[i]);
             // Remove circuit references on entities in split segment
-            baseSeg.allSegmentTiles[i].installedEntity.circuit = null;
+            
             baseSeg.allSegmentTiles[i].installedEntity.circSeg = null;
         }
             
@@ -286,7 +295,7 @@ public class CircuitController : MonoBehaviour {
         // Make a new circuit from the split segment (will merge back to the original circuit if connected elsewhere)
         Circuit newCirc = new Circuit(newSeg);
 
-        triggerCircuitChanged(baseSeg.parentCircuit);
+        triggerCircuitChanged(baseSeg.circuit);
         triggerCircuitChanged(newCirc);
 
     }
@@ -308,24 +317,24 @@ public class CircuitController : MonoBehaviour {
                 baseSeg.allSegmentTiles.Remove(entity.rootTile);
                 baseSeg.startTile = getNearestTileInSegment(removedTile, baseSeg);
                 entity.circSeg = null;
-                entity.circuit = null;
+                
             }
             // Entity removed from end
             else if (baseSeg.endTile == entity.rootTile) {
                 entity.circSeg.allSegmentTiles.Remove(entity.rootTile);
                 baseSeg.endTile = getNearestTileInSegment(removedTile, baseSeg);
                 entity.circSeg = null;
-                entity.circuit = null;
+                
             }
             // Entity being removed from middle - must split circuit
             else {
                 entity.circSeg = null;
-                entity.circuit = null;
+                
                 splitSegment(baseSeg, entity.rootTile);
                 
             }
 
-            triggerCircuitChanged(baseSeg.parentCircuit);
+            triggerCircuitChanged(baseSeg.circuit);
 
         }
 

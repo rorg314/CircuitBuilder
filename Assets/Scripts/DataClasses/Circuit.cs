@@ -5,6 +5,7 @@ using UnityEngine;
 
 public enum SegmentType { Wire, Component, Junction};
 
+
 public class Circuit {
 
     // Junctions in the circuit
@@ -33,7 +34,7 @@ public class Circuit {
         // Create a new circuit - will be merged with others if found 
 
         this.allTilesInCircuit.Add(entity.rootTile);
-        entity.circuit = this;
+        
 
         if (entity.entityType == EntityType.WirePiece) {
             // Create a single piece long wire segment and add to circuit
@@ -42,7 +43,7 @@ public class Circuit {
             // Set reference on entity to this segment
             entity.circSeg = seg;
             // Set references to parent circuit on segment (already set on entity)
-            seg.parentCircuit = this;
+            seg.circuit = this;
         }
 
 
@@ -82,14 +83,14 @@ public class Circuit {
     // For constructing with existing segment
     public Circuit(CircuitSegment segment) {
 
-        segment.parentCircuit = this;
+        segment.circuit = this;
 
         this.juncs = new List<WireJunction>();
         this.segments = new List<CircuitSegment>();
         this.allTilesInCircuit = new List<Tile>();
 
         this.allTilesInCircuit.AddRange(segment.allSegmentTiles);
-
+        this.segments.Add(segment);
 
         // Check for neighbour circuits on either end of wiresegment
         if (segment.segmentType == SegmentType.Wire) {
@@ -187,7 +188,7 @@ public class Circuit {
     // Segment is graph edge
     public class CircuitSegment {
         // Circuit this wire segment belongs to
-        public Circuit parentCircuit;
+        public Circuit circuit;
 
         public SegmentType segmentType;
 

@@ -72,7 +72,7 @@ public class Entity {
     public float current;
 
     // The circuit that contains this entity
-    public Circuit circuit;
+    //public Circuit circuit;
     // Wire segment that contains this entity (if wire)
     public Circuit.CircuitSegment circSeg;
     // If this entity is a wire junction

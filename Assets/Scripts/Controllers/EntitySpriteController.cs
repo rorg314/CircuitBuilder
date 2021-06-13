@@ -178,7 +178,7 @@ public class EntitySpriteController : MonoBehaviour {
 
         UiController.instance.hidePolarity(entity);
         
-        if(entity.circuit != null) {
+        if(entity.circSeg != null) {
             CircuitController.instance.removeEntityFromCircuit(entity);
         }
 
