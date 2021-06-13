@@ -6,20 +6,20 @@ using UnityEngine;
 public enum SegmentType { Wire, Component, Junction};
 
 public class Circuit {
-    
+
     // Junctions in the circuit
     public List<WireJunction> juncs;
     // Wire segments
     public List<CircuitSegment> segments;
-    // All entities in circuit
-    public List<Tile> allTiles;
-    
+    // All tiles in circuit
+    public List<Tile> allTilesInCircuit;
 
-    
+
+
 
     // A circuit is equivalent to a closed node graph with directed edges 
     // Any newly created entity spawns a new circuit - will be merged into other circuits 
-    
+
 
     // Constructor for single entity circuits
     public Circuit(Entity entity) {
@@ -28,11 +28,11 @@ public class Circuit {
 
         this.juncs = new List<WireJunction>();
         this.segments = new List<CircuitSegment>();
-        this.allTiles = new List<Tile>();
+        this.allTilesInCircuit = new List<Tile>();
 
         // Create a new circuit - will be merged with others if found 
-        
-        this.allTiles.Add(entity.rootTile);
+
+        this.allTilesInCircuit.Add(entity.rootTile);
         entity.circuit = this;
 
         if (entity.entityType == EntityType.WirePiece) {
@@ -40,7 +40,7 @@ public class Circuit {
             CircuitSegment seg = new CircuitSegment(entity);
             segments.Add(seg);
             // Set reference on entity to this segment
-            entity.circSegment = seg;
+            entity.circSeg = seg;
             // Set references to parent circuit on segment (already set on entity)
             seg.parentCircuit = this;
         }
@@ -54,20 +54,15 @@ public class Circuit {
 
         if (neighbourCircs.Count == 2) {
             // Need to join two circuits - append to one then join
-            //appendCircuit(neighbourCircs[0], entity);
-            //entity.circuit = neighbourCircs[0];
+            Circuit baseCirc = CircuitController.instance.appendCircuit(neighbourCircs[0], this, entity);
 
-            Circuit baseCirc = appendCircuit(neighbourCircs[0], this, entity);
-            
             CircuitController.instance.joinCircuits(baseCirc, neighbourCircs[1], entity.rootTile);
         }
 
         else if (neighbourCircs.Count == 1) {
             // Append to the existing circuit
-            //appendCircuit(neighbourCircs[0], entity);
+            CircuitController.instance.appendCircuit(neighbourCircs[0], this, entity);
 
-            appendCircuit(neighbourCircs[0], this, entity);
-            
         }
 
         else if (neighbourCircs.Count == 0) {
@@ -78,28 +73,90 @@ public class Circuit {
         }
 
         Debug.Log("Number of circuits after: " + CircuitController.instance.allCircuits.Count);
-        
-
-        
 
     }
-    // Use to append a single entity to this existing circuit
-    public Circuit appendCircuit(Circuit baseCirc, Circuit appendCirc, Entity entity) {
 
-        // Get the tile in the base that this entity is appending to (returns first found)
-        Tile baseTile = CircuitController.instance.getBaseTile(baseCirc, entity.rootTile);
+    
+    
 
-        // Join the circuits
-        CircuitController.instance.joinCircuits(baseCirc, appendCirc, baseTile);
-        // Add the reference to the base circuit on the entity
-        entity.circuit = baseCirc;
-        // Add the appended tile to the base circ
-        baseCirc.allTiles.Add(entity.rootTile);
+    // For constructing with existing segment
+    public Circuit(CircuitSegment segment) {
 
-        CircuitController.instance.triggerCircuitChanged(baseCirc);
+        segment.parentCircuit = this;
 
-        return baseCirc;
+        this.juncs = new List<WireJunction>();
+        this.segments = new List<CircuitSegment>();
+        this.allTilesInCircuit = new List<Tile>();
+
+        this.allTilesInCircuit.AddRange(segment.allSegmentTiles);
+
+
+        // Check for neighbour circuits on either end of wiresegment
+        if (segment.segmentType == SegmentType.Wire) {
+
+            List<Tile> endNeighbours = segment.endTile.getNeighbouringTiles();
+            List<Circuit> endCircs = CircuitController.instance.getNeighbourCircuitsExcludingThis(endNeighbours, this);
+
+            List<Tile> startNeighbours = segment.startTile.getNeighbouringTiles();
+            List<Circuit> startCircs = CircuitController.instance.getNeighbourCircuitsExcludingThis(startNeighbours, this);
+
+            
+            if (endCircs.Count > 0) {
+
+                if(endCircs.Count == 1) {
+                    // Tile in the base circuit being joined onto (by this new circuit)
+                    Tile baseTile = TileController.instance.getCommonTile(endNeighbours, endCircs[0].allTilesInCircuit);
+                    CircuitController.instance.joinCircuits(endCircs[0], this, baseTile);
+                }
+
+                if(endCircs.Count == 2) {
+
+                    Tile baseTile = TileController.instance.getCommonTile(endNeighbours, endCircs[0].allTilesInCircuit);
+                    CircuitController.instance.joinCircuits(endCircs[0], this, baseTile);
+
+                    Tile baseTile1 = TileController.instance.getCommonTile(endNeighbours, endCircs[1].allTilesInCircuit);
+                    CircuitController.instance.joinCircuits(endCircs[1], endCircs[0], baseTile1);
+
+                }
+
+            }
+
+            if (startCircs.Count > 0) {
+
+                if (startCircs.Count == 1) {
+                    // Tile in the base circuit being joined onto (by this new circuit)
+                    Tile baseTile = TileController.instance.getCommonTile(endNeighbours, startCircs[0].allTilesInCircuit);
+                    CircuitController.instance.joinCircuits(startCircs[0], this, baseTile);
+                }
+
+                if (startCircs.Count == 2) {
+
+                    Tile baseTile = TileController.instance.getCommonTile(endNeighbours, startCircs[0].allTilesInCircuit);
+                    CircuitController.instance.joinCircuits(startCircs[0], this, baseTile);
+
+                    Tile baseTile1 = TileController.instance.getCommonTile(endNeighbours, startCircs[1].allTilesInCircuit);
+                    CircuitController.instance.joinCircuits(startCircs[1], startCircs[0], baseTile1);
+
+                }
+
+            }
+
+            if(startCircs.Count == 0 && endCircs.Count == 0) {
+
+                // Created a standalone circuit
+
+                CircuitController.instance.allCircuits.Add(this);
+
+                CircuitController.instance.triggerCircuitChanged(this);
+            }
+
+        }
+
+
     }
+
+
+    
 
     // Check if a newly created circuit should be added to any surrounding circuits
     public List<Circuit> checkForNeighbourCircuits(Entity entity) {
@@ -120,11 +177,11 @@ public class Circuit {
         List<Circuit> neighbourCircs = CircuitController.instance.getNeighbourCircuits(neighbours);
 
         return neighbourCircs;
-        
+
 
     }
 
-    
+
 
     // Segment spans from start to end tile - can be next to a junction tile
     // Segment is graph edge
@@ -133,14 +190,17 @@ public class Circuit {
         public Circuit parentCircuit;
 
         public SegmentType segmentType;
-        
+
         // Length of the wiresegment in tiles
         public int length;
         // Start and end tiles
         public Tile startTile;
         public Tile endTile;
-        // All tiles
+        // All tiles in segment - ordered from start to end tile 
         public List<Tile> allSegmentTiles;
+
+        // List of connected segments 
+        List<CircuitSegment> connectedSegments;
 
         // The debug arrow object for this segment
         public GameObject debugArrow;
@@ -152,10 +212,12 @@ public class Circuit {
         // Current through this segment
         public float current;
 
-        // Construct a single circuit segment - circuit reference set outside constructor
+        // Construct a single circuit segment -
+        // PARENT CIRCUIT MUST BE SET OUTSIDE CONSTRUCTOR
         public CircuitSegment(Entity entity) {
 
             this.allSegmentTiles = new List<Tile>();
+            this.connectedSegments = new List<CircuitSegment>();
 
             if (entity.entityType == EntityType.WirePiece) {
                 // Segment is directed based on current flow - from start (pos) to end (neg) tile - negative current flows from end to start
@@ -164,20 +226,41 @@ public class Circuit {
                 // Segment length
                 this.length = this.getSegmentLength();
                 allSegmentTiles.Add(startTile);
-                entity.circSegment = this;
+                entity.circSeg = this;
+                this.segmentType = SegmentType.Wire;
             }
-            
-            if(entity.entityType == EntityType.Component) {
+
+            if (entity.entityType == EntityType.Component) {
                 this.startTile = entity.posTerminal.terminalTile;
                 this.endTile = entity.negTerminal.terminalTile;
                 this.length = 1;
                 allSegmentTiles.AddRange(entity.installedTiles);
 
-                entity.circSegment = this;
+                entity.circSeg = this;
+                this.segmentType = SegmentType.Component;
             }
 
-
             // Segment either ends on component or at junction
+
+        }
+
+        // Overload for constructing wire type segment with list of tiles -
+        // PARENT CIRCUIT MUST BE SET OUTSIDE CONSTRUCTOR
+        public CircuitSegment(List<Tile> allSegmentTiles) {
+
+            this.allSegmentTiles = allSegmentTiles;
+            this.connectedSegments = new List<CircuitSegment>();
+            this.startTile = allSegmentTiles[0];
+            this.endTile = allSegmentTiles[allSegmentTiles.Count - 1];
+            this.length = getSegmentLength();
+            // Must be a wire segment if given list of tiles
+            this.segmentType = SegmentType.Wire;
+
+            foreach (Tile t in allSegmentTiles) {
+                if (t.installedEntity != null) {
+                    t.installedEntity.circSeg = this;
+                }
+            }
 
         }
 
@@ -202,13 +285,13 @@ public class Circuit {
             // Tiles neighbouring the appended piece 
             List<Tile> neighbours = entity.rootTile.getNeighbouringTiles();
 
-            foreach(Tile neighbour in neighbours) {
+            foreach (Tile neighbour in neighbours) {
 
                 if (startTile == neighbour) {
                     // Appending to start of wire 
                     startTile = entity.rootTile;
                     allSegmentTiles.Add(entity.rootTile);
-                    entity.circSegment = this;
+                    entity.circSeg = this;
                     this.length = getSegmentLength();
                     return;
                 }
@@ -216,16 +299,16 @@ public class Circuit {
                     // Appending to start of wire 
                     endTile = entity.rootTile;
                     allSegmentTiles.Add(entity.rootTile);
-                    entity.circSegment = this;
+                    entity.circSeg = this;
                     this.length = getSegmentLength();
                     return;
                 }
-                
+
                 continue;
 
             }
-            
-            
+
+
             // Segment was not joining on the start/end - must create junction instead
 
 
@@ -240,10 +323,10 @@ public class Circuit {
 
 
         }
-        
+
     }
 
-    
+
 
     // Defines a junction between (at most four) wire segments
     // Equivalent to a graph node
@@ -273,51 +356,4 @@ public class Circuit {
 
     }
 
-
-    //}
-
-    //public Tile findSegmentIntersection(WireSegment seg1, WireSegment seg2) {
-
-
-    //}
-
-
-
-
-
-
-
-
-
-
-    
-
-
-    
-
-
-    
-
-
-
 }
-
-
-
-//Old
-//public class WirePiece {
-
-//    public Tile tile;
-    
-//    public string neighbours;
-
-//    public Entity wirePieceEntity;
-
-//    public WirePiece(Tile t) {
-
-//        this.tile = t;
-        
-
-//    }
-//}
-

@@ -177,6 +177,10 @@ public class EntitySpriteController : MonoBehaviour {
         //Debug.Log("Removing entity" + entity.ToString());
 
         UiController.instance.hidePolarity(entity);
+        
+        if(entity.circuit != null) {
+            CircuitController.instance.removeEntityFromCircuit(entity);
+        }
 
         // Uninstall the entity only if it was buildable/built 
         if (entity.cantBuild == false) {
@@ -327,26 +331,6 @@ public class EntitySpriteController : MonoBehaviour {
                         neighbourCode += ints[i];
 
                     }
-                    
-                    
-                    
-                    //Vector3Int rootCoords = t.installedEntity.rootTile.getTileCoordinates();
-                    //// Check pos terminal (probably want to streamline this)
-                    //if (t.getTileCoordinates() == rootCoords + t.installedEntity.posTileOffset) {
-                    //    // Tile is pos terminal - check orientation from this tile matches terminal dir (opposite)
-                    //    Dir dir = TileController.instance.getNeighbourTileOrientation(rootTile, t);
-                    //    if(BuildController.instance.oppositeDir(dir) == t.installedEntity.posDir) {
-                    //        neighbourCode += ints[i];
-                    //    }
-                    //}
-                    //// Check neg terminal
-                    //if (t.getTileCoordinates() == rootCoords + t.installedEntity.negTileOffset) {
-                    //    // Tile is neg terminal - check orientation from this tile matches terminal dir (opposite)
-                    //    Dir dir = TileController.instance.getNeighbourTileOrientation(rootTile, t);
-                    //    if (BuildController.instance.oppositeDir(dir) == t.installedEntity.negDir) {
-                    //        neighbourCode += ints[i];
-                    //    }
-                    //}
 
                 }
             }
