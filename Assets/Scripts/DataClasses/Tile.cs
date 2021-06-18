@@ -15,10 +15,8 @@ public class Tile {
     //Generic object installed on this tile (may be installed accross multiple tiles)
     public Entity installedEntity { get; set; }
 
-    // Defines this tile as a wire junction
-    //public Circuit.WireJunction wireJunction;
-    // The wire segment that contains this tile 
-    //public Circuit.WireSegment wireSegment;
+    
+  
 
 
     public Tile(TileGrid<Tile> grid, int x, int z) {

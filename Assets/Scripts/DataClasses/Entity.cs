@@ -71,12 +71,12 @@ public class Entity {
     // Current flowing through this entity
     public float current;
 
-    // The circuit that contains this entity
-    //public Circuit circuit;
     // Circuit segment that contains this entity 
     public Circuit.Segment circSeg;
     // If this entity is a junction
     public Circuit.Junction circJunc;
+    // The arrow showing the direction of the segment (single tile)
+    public GameObject segArrow;
     
 
     public class Terminal {

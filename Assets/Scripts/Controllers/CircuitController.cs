@@ -4,7 +4,11 @@ using UnityEngine;
 using System;
 
 
+
+
 public class CircuitController : MonoBehaviour {
+
+    
 
     public static CircuitController instance;
 
@@ -14,7 +18,9 @@ public class CircuitController : MonoBehaviour {
     [HideInInspector]
     public bool showDebug;
     
+    public Sprite debugArrowEndsSprite;
     public Sprite debugArrowSprite;
+    public Sprite debugJuncSprite;
 
     private Color[] debugColours = { Color.white, Color.red, Color.blue, Color.green, Color.cyan, Color.magenta, Color.black, Color.yellow };
     private int lastColourIndex = 0;
@@ -45,44 +51,98 @@ public class CircuitController : MonoBehaviour {
     public void drawCircuitDebug(Circuit circ) {
 
         foreach(Circuit.Segment seg in circ.segments) {
-            // Destroy any old arrow if existing
-            if(seg.debugArrow != null) {
-                Destroy(seg.debugArrow);
+
+            drawSegmentEndsDebug(seg);
+
+            drawSegmentTileArrows(seg);
+            
+        }
+        foreach(Circuit.Junction junc in circ.juncs) {
+            if(junc.juncDebugObject != null) {
+                Destroy(junc.juncDebugObject);
             }
 
-            Vector3 dir = seg.endTile.getTileWorldPositon() - seg.startTile.getTileWorldPositon();
-            Vector3 startPos = seg.startTile.getTileWorldPositon() + TileController.instance.tileCentreOffset;
-            
-            
-            GameObject segArrow = new GameObject();
-            
-            // Scale arrow based on length of dir (arrow initially points in x dir only, then rotate to be lying along dir)
-            segArrow.transform.localScale = new Vector3(dir.magnitude, TileController.instance.cellSize, 0);
-            segArrow.transform.position = startPos + dir * 0.5f;
-            
-            float rot = CalculateAngle(Vector3.right, dir);
-            segArrow.transform.Rotate(-90, rot, 0, Space.Self);
+            GameObject juncDebug = new GameObject();
 
-            seg.debugArrow = segArrow;
+            junc.juncDebugObject = juncDebug;
 
-            SpriteRenderer sr = segArrow.AddComponent<SpriteRenderer>();
-            sr.sprite = debugArrowSprite;
-            sr.color = debugColours[(lastColourIndex + 1) % (debugColours.Length-1)];
+            juncDebug.transform.localScale = new Vector3(TileController.instance.cellSize, TileController.instance.cellSize, 0);
+            juncDebug.transform.position = junc.juncTile.getTileWorldPositon() + TileController.instance.tileCentreOffset;
+            juncDebug.transform.Rotate(-90, 0, 0, Space.Self);
+
+            SpriteRenderer sr = juncDebug.AddComponent<SpriteRenderer>();
+            sr.sprite = debugJuncSprite;
+            sr.color = debugColours[(lastColourIndex + 1) % (debugColours.Length - 1)];
             lastColourIndex++;
             sr.sortingLayerName = "UI";
             sr.sortingOrder = 0;
-            
-            
         }
 
     }
 
-    // Util for getting 360 angle between vectors
-    public static float CalculateAngle(Vector3 from, Vector3 to) {
+    public void drawSegmentTileArrows(Circuit.Segment seg) {
+        
+        
+        // Loop through tiles in order from start to finish - 1
+        for (int i = 0; i < seg.allSegmentTiles.Count - 1; i++) {
+            Tile tile = seg.allSegmentTiles[i];
+            // Arrow should point towards next tile in segment
+            Dir dir = TileController.instance.getNeighbourTileOrientation(tile, seg.allSegmentTiles[i + 1]);
+            // Arrow initialises pointing N
+            float rot = BuildController.instance.angleFromDir(dir);
+            // Remove any old arrow
+            if(tile.installedEntity != null && tile.installedEntity.segArrow != null) {
+                Destroy(tile.installedEntity.segArrow);
+            }
+            GameObject arrow = new GameObject();
+            tile.installedEntity.segArrow = arrow;
 
-        return Quaternion.FromToRotation(Vector3.up, to - from).eulerAngles.y;
+            arrow.transform.position = tile.getTileWorldPositon() + TileController.instance.tileCentreOffset;
+            arrow.transform.localScale = new Vector3(TileController.instance.cellSize, TileController.instance.cellSize, 1f);
+            arrow.transform.Rotate(90, rot, 0, Space.Self);
+
+
+            SpriteRenderer sr = arrow.AddComponent<SpriteRenderer>();
+            sr.sprite = debugArrowSprite;
+
+
+        }
+        
 
     }
+    public void drawSegmentEndsDebug(Circuit.Segment seg) {
+
+        // Destroy any old arrow if existing
+        if (seg.debugArrow != null) {
+            Destroy(seg.debugArrow);
+        }
+
+        Vector3 dir = seg.endTile.getTileWorldPositon() - seg.startTile.getTileWorldPositon();
+        Vector3 startPos = seg.startTile.getTileWorldPositon() + TileController.instance.tileCentreOffset;
+
+
+        GameObject segArrow = new GameObject();
+
+        // Scale arrow based on length of dir (arrow initially points in x dir only, then rotate to be lying along dir)
+        segArrow.transform.localScale = new Vector3(dir.magnitude, TileController.instance.cellSize, 0);
+        segArrow.transform.position = startPos + dir * 0.5f;
+
+        
+        float rot = Quaternion.FromToRotation(Vector3.right, dir).eulerAngles.y;
+        segArrow.transform.Rotate(-90, 0, 0, Space.Self);
+        segArrow.transform.Rotate(0, rot, 0, Space.World);
+
+        seg.debugArrow = segArrow;
+
+        SpriteRenderer sr = segArrow.AddComponent<SpriteRenderer>();
+        sr.sprite = debugArrowEndsSprite;
+        sr.color = debugColours[(lastColourIndex + 1) % (debugColours.Length - 1)];
+        lastColourIndex++;
+        sr.sortingLayerName = "UI";
+        sr.sortingOrder = 0;
+
+    }
+
 
     public List<Entity> getNeighbourComponentEntities(List<Tile> neighbourTiles) {
 
@@ -115,7 +175,7 @@ public class CircuitController : MonoBehaviour {
 
         List<Circuit> neighbourCircs = new List<Circuit>();
         foreach (Tile t in neighbourTiles) {
-            if (t.installedEntity != null && t.installedEntity.circSeg.circuit != null) {
+            if (t.installedEntity != null && t.installedEntity.circSeg != null) {
                 // Append to neighbour circs
                 neighbourCircs.Add(t.installedEntity.circSeg.circuit);
             }
@@ -206,7 +266,7 @@ public class CircuitController : MonoBehaviour {
 
         }
 
-        // If joining to a junction
+        
         
 
         
@@ -222,52 +282,45 @@ public class CircuitController : MonoBehaviour {
         // Destroy any debug preview on the join seg
         Destroy(joinSeg.debugArrow);
         // Remove the join seg from its circuit master list 
-        joinSeg.circuit.segments.Remove(joinSeg);
+        //joinSeg.circuit.segments.Remove(joinSeg);
 
-        if (baseSeg.endTile == baseTile) {
-            // Joining to end of base
+        // Check if joining segment starts/ends together - or if creating junction
+        if((baseTile == baseSeg.startTile || baseTile == baseSeg.endTile) && (joinTile == joinSeg.startTile || joinTile == joinSeg.endTile)) {
 
-            if(joinTile == joinSeg.startTile) {
-                // Joining start to end of base, new end is end of join seg
-                baseSeg.endTile = joinSeg.endTile;
-                // Add range to end of list of base seg
-                baseSeg.allSegmentTiles.AddRange(joinSeg.allSegmentTiles);
+            if (baseSeg.endTile == baseTile) {
+                // Joining to end of base 
+
+                if (joinTile == joinSeg.startTile) {
+                    // Joining start to end of base, new end is end of join seg
+                    baseSeg.endTile = joinSeg.endTile;
+                    // Add range to end of list of base seg
+                    baseSeg.allSegmentTiles.AddRange(joinSeg.allSegmentTiles);
+                }
+                else {
+                    // Joining end to end of base - join start is new base end 
+                    baseSeg.endTile = joinSeg.startTile;
+                    // Add the joined range in reverse order
+                    joinSeg.allSegmentTiles.Reverse();
+                    baseSeg.allSegmentTiles.AddRange(joinSeg.allSegmentTiles);
+                }
             }
-            else {
-                // Joining end to end of base - join start is new base end 
-                baseSeg.endTile = joinSeg.startTile;
-                // Add the joined range in reverse order
-                joinSeg.allSegmentTiles.Reverse();
-                baseSeg.allSegmentTiles.AddRange(joinSeg.allSegmentTiles);
+            else if (baseSeg.startTile == baseTile) {
+                // Joining to start of base
+                if (joinTile == joinSeg.startTile) {
+                    // Joining start to start of base, new start is end of join seg
+                    baseSeg.startTile = joinSeg.endTile;
+                    // Reverse the joined tiles and add to beginning of base range
+                    joinSeg.allSegmentTiles.Reverse();
+                    baseSeg.allSegmentTiles.InsertRange(0, joinSeg.allSegmentTiles);
+                }
+                else {
+                    // Joining end to start of base 
+                    baseSeg.startTile = joinSeg.startTile;
+                    // Add range to beginning of base range
+                    baseSeg.allSegmentTiles.InsertRange(0, joinSeg.allSegmentTiles);
+                }
             }
 
-            // Change the circuit ref on the joined segments to the base circuit
-            foreach (Tile t in joinSeg.circuit.allTilesInCircuit) {
-
-                t.installedEntity.circSeg.circuit = baseSeg.circuit;
-
-            }
-            // Replace the reference on all joinSegment tiles with the base segment
-            foreach (Tile t in joinSeg.allSegmentTiles) {
-                t.installedEntity.circSeg = baseSeg;
-            }
-
-        }
-        else if (baseSeg.startTile == baseTile) {
-            // Joining to start of base
-            if (joinTile == joinSeg.startTile) {
-                // Joining start to start of base, new start is end of join seg
-                baseSeg.startTile = joinSeg.endTile;
-                // Reverse the joined tiles and add to beginning of base range
-                joinSeg.allSegmentTiles.Reverse();
-                baseSeg.allSegmentTiles.InsertRange(0, joinSeg.allSegmentTiles);
-            }
-            else {
-                // Joining end to start of base 
-                baseSeg.startTile = joinSeg.startTile;
-                // Add range to beginning of base range
-                baseSeg.allSegmentTiles.InsertRange(0, joinSeg.allSegmentTiles);
-            }
             // Change the circuit ref on the joined segments to the base circuit
             foreach (Tile t in joinSeg.circuit.allTilesInCircuit) {
                 t.installedEntity.circSeg.circuit = baseSeg.circuit;
@@ -276,24 +329,50 @@ public class CircuitController : MonoBehaviour {
             foreach (Tile t in joinSeg.allSegmentTiles) {
                 t.installedEntity.circSeg = baseSeg;
             }
-        }
-        else {// Joining to middle of segment - create junction 
-            // Split the original segment at the base tile - baseTile becomes juncTile
-            // Must use the remove entity method
-            if (baseTile.installedEntity != null) {
-                removeEntityFromCircuit(baseTile.installedEntity);
-            }
-            else {
-                Debug.LogError("Trying to create junction with no installed entity!");
-            }
 
-            // Join seg becomes standalone circuit segment - should not join to anything until junc created
+
+        }
+        else { // Joining one segment to the middle of another
             
-            Circuit joinCircSeg = new Circuit(joinSeg);
+            if(baseTile == baseSeg.endTile || baseTile == baseSeg.startTile) {
+                // baseTile is end being joined into the middle of another segment (joinTile is not start/end of joinSeg)
+                if (joinTile.installedEntity != null) {
+                    removeEntityFromCircuit(joinTile.installedEntity);
+                }
+                else {
+                    Debug.LogError("Trying to create junction with no installed entity!");
+                }
+
+                // Join seg becomes standalone circuit segment - should not join to anything until junc created
+
+                Circuit joinCircSeg = new Circuit(baseSeg);
 
 
-            Circuit.Junction junc = new Circuit.Junction(baseTile);
-            Circuit juncCirc = new Circuit(junc);
+                Circuit.Junction junc = new Circuit.Junction(joinTile);
+                Circuit juncCirc = new Circuit(junc);
+
+            }
+            else {
+                // baseTile is in the middle of the base segment - joinTile start/end of joinSeg
+                if (baseTile.installedEntity != null) {
+                    removeEntityFromCircuit(baseTile.installedEntity);
+                }
+                else {
+                    Debug.LogError("Trying to create junction with no installed entity!");
+                }
+
+                // Join seg becomes standalone circuit segment - should not join to anything until junc created
+
+                Circuit joinCircSeg = new Circuit(joinSeg);
+
+
+                Circuit.Junction junc = new Circuit.Junction(baseTile);
+                Circuit juncCirc = new Circuit(junc);
+
+            }
+            
+            
+            
             
 
         }
@@ -335,6 +414,8 @@ public class CircuitController : MonoBehaviour {
 
         // Make a new circuit from the split segment (will merge back to the original circuit if connected elsewhere)
         Circuit newCirc = new Circuit(newSeg);
+
+        
 
         triggerCircuitChanged(baseSeg.circuit);
         triggerCircuitChanged(newCirc);

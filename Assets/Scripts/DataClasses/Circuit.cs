@@ -177,8 +177,10 @@ public class Circuit {
         foreach(Circuit circ in neighbourCircs) {
 
             CircuitController.instance.joinCircuits(this, circ, junc.juncTile);
-
+            this.segments.AddRange(circ.segments);
+            this.juncs.AddRange(circ.juncs);
         }
+        CircuitController.instance.triggerCircuitChanged(this);
 
     }
 
@@ -327,6 +329,8 @@ public class Circuit {
         public Dictionary<Segment, float> juncSegmentCurrentDict;
         // Junction tile
         public Tile juncTile;
+
+        public GameObject juncDebugObject;
 
 
         public Junction(Tile juncTile) {

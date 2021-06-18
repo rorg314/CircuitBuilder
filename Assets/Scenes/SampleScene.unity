@@ -2042,6 +2042,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   showDebug: 0
   debugArrowSprite: {fileID: 21300000, guid: 39f4ac12e8e488a45858dcd0c01b4d4a, type: 3}
+  debugJuncSprite: {fileID: 21300000, guid: 7169cb102b609974e8ece6c4fced5f0d, type: 3}
 --- !u!1 &1762081238
 GameObject:
   m_ObjectHideFlags: 0
