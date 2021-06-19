@@ -98,10 +98,8 @@ public class Entity {
             this.charge = charge;
             this.terminalOffset = terminalOffset;
             this.terminalDir = terminalDir;
+
             
-            //this.terminalTile = TileController.instance.tileGrid.GetGridObject(entity.rootTile.getTileCoordinates() + terminalOffset);
-            
-            //this.connectTile = getConnectionTile();
         }
 
         // Copy constructor for building instance from prototype
@@ -114,18 +112,12 @@ public class Entity {
 
         }
 
-        public void setConnectionTile() {
+        
 
-            Tile start = entity.rootTile;
-
-            connectTile = TileController.instance.getAdjacentTileInDir(start, terminalDir);
-
-        }
-
-        public void setTerminalTile() {
+        public void setTerminalTiles() {
 
             terminalTile = TileController.instance.tileGrid.GetGridObject(entity.rootTile.getTileCoordinates() + terminalOffset);
-
+            connectTile = TileController.instance.getAdjacentTileInDir(terminalTile, terminalDir);
         }
 
 
@@ -160,7 +152,7 @@ public class Entity {
 
         posTerminal = new Terminal(this, Charge.Pos, posT, posDir);
         negTerminal = new Terminal(this, Charge.Neg, negT, negDir);
-        terminals = new Terminal[]{ posTerminal, negTerminal };
+        terminals = new Terminal[] { posTerminal, negTerminal };
         
         //this.posTileOffset = posT;
         //this.negTileOffset = negT;
@@ -239,7 +231,7 @@ public class Entity {
 
     
 
-    public Entity placeEntityInstance(Tile rootTile, Entity proto, bool isGhost, bool cantBuild, Dir buildDir) {
+   public Entity placeEntityInstance(Tile rootTile, Entity proto, bool isGhost, bool cantBuild, Dir buildDir) {
 
         Entity entity = proto.Clone();
 
@@ -248,8 +240,7 @@ public class Entity {
         // Set terminal tile info
         if(entity.entityType == EntityType.Component) {
             foreach (Terminal term in entity.terminals) {
-                term.setTerminalTile();
-                term.setConnectionTile();
+                term.setTerminalTiles();
             }
         }
         

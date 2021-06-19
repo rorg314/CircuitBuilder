@@ -14,7 +14,8 @@ public class Circuit {
     public List<Segment> segments;
     // All tiles in circuit
     public List<Tile> allTilesInCircuit;
-
+    // List of all debug objects in for this circuit
+    public List<GameObject> allDebugObjects;
 
 
 
@@ -34,47 +35,63 @@ public class Circuit {
         // Create a new circuit - will be merged with others if found 
 
         this.allTilesInCircuit.Add(entity.rootTile);
-        
 
-        if (entity.entityType == EntityType.WirePiece) {
-            // Create a single piece long wire segment and add to circuit
+        // Check for neighbouring circuits and append if appropriate
+        List<Circuit> neighbourCircs = checkForNeighbourCircuits(entity);
+
+        // Check special case for making a new junction
+        if (neighbourCircs.Count == 4) {
+            // Create new junction from this entity and use to create a new circuit (this circuit discarded)
+            Junction junc = new Junction(entity.rootTile);
+            Circuit newCirc = new Circuit(junc);
+
+        }
+        else {
+            // Proceed with this circuit creation
+
+
+            // Create a segment and add to circuit
             Segment seg = new Segment(entity);
             segments.Add(seg);
             // Set reference on entity to this segment
             entity.circSeg = seg;
             // Set references to parent circuit on segment (already set on entity)
             seg.circuit = this;
+
+            Debug.Log("Number of circuits before: " + CircuitController.instance.allCircuits.Count);
+
+
+            if (neighbourCircs.Count == 3) {
+                // Need to join three circuits - append to one then join the others
+                Circuit baseCirc = CircuitController.instance.appendCircuit(neighbourCircs[0], this, entity);
+
+                Circuit newBase = CircuitController.instance.joinCircuits(baseCirc, neighbourCircs[1], entity.rootTile);
+
+                CircuitController.instance.joinCircuits(newBase, neighbourCircs[2], entity.rootTile);
+            }
+
+            if (neighbourCircs.Count == 2) {
+                // Need to join two circuits - append to one then join
+                Circuit baseCirc = CircuitController.instance.appendCircuit(neighbourCircs[0], this, entity);
+
+                CircuitController.instance.joinCircuits(baseCirc, neighbourCircs[1], entity.rootTile);
+            }
+
+            else if (neighbourCircs.Count == 1) {
+                // Append to the existing circuit
+                CircuitController.instance.appendCircuit(neighbourCircs[0], this, entity);
+
+            }
+
+            else if (neighbourCircs.Count == 0) {
+                // Created a new standalone circuit
+                CircuitController.instance.allCircuits.Add(this);
+
+                CircuitController.instance.triggerCircuitChanged(this);
+            }
+
+            Debug.Log("Number of circuits after: " + CircuitController.instance.allCircuits.Count);
         }
-
-
-        Debug.Log("Number of circuits before: " + CircuitController.instance.allCircuits.Count);
-
-        // Check for neighbouring circuits and append if appropriate
-        List<Circuit> neighbourCircs = checkForNeighbourCircuits(entity);
-
-
-        if (neighbourCircs.Count == 2) {
-            // Need to join two circuits - append to one then join
-            Circuit baseCirc = CircuitController.instance.appendCircuit(neighbourCircs[0], this, entity);
-
-            CircuitController.instance.joinCircuits(baseCirc, neighbourCircs[1], entity.rootTile);
-        }
-
-        else if (neighbourCircs.Count == 1) {
-            // Append to the existing circuit
-            CircuitController.instance.appendCircuit(neighbourCircs[0], this, entity);
-
-        }
-
-        else if (neighbourCircs.Count == 0) {
-            // Created a new standalone circuit
-            CircuitController.instance.allCircuits.Add(this);
-
-            CircuitController.instance.triggerCircuitChanged(this);
-        }
-
-        Debug.Log("Number of circuits after: " + CircuitController.instance.allCircuits.Count);
-
     }
 
     
@@ -104,41 +121,56 @@ public class Circuit {
             
             if (endCircs.Count > 0) {
 
-                if(endCircs.Count == 1) {
-                    // Tile in the base circuit being joined onto (by this new circuit)
-                    Tile baseTile = TileController.instance.getCommonTile(endNeighbours, endCircs[0].allTilesInCircuit);
-                    CircuitController.instance.joinCircuits(endCircs[0], this, baseTile);
-                }
+                for (int i = 0; i < endCircs.Count; i++) {
 
-                if(endCircs.Count == 2) {
-
-                    Tile baseTile = TileController.instance.getCommonTile(endNeighbours, endCircs[0].allTilesInCircuit);
-                    CircuitController.instance.joinCircuits(endCircs[0], this, baseTile);
-
-                    Tile baseTile1 = TileController.instance.getCommonTile(endNeighbours, endCircs[1].allTilesInCircuit);
-                    CircuitController.instance.joinCircuits(endCircs[1], endCircs[0], baseTile1);
+                    Tile baseTile = TileController.instance.getCommonTile(endNeighbours, endCircs[i].allTilesInCircuit);
+                    CircuitController.instance.joinCircuits(this, endCircs[i], baseTile);
 
                 }
+
+
+                //if(endCircs.Count == 1) {
+                //    // Tile in the base circuit being joined onto (by this new circuit)
+                //    Tile baseTile = TileController.instance.getCommonTile(endNeighbours, endCircs[0].allTilesInCircuit);
+                //    CircuitController.instance.joinCircuits(endCircs[0], this, baseTile);
+                //}
+
+                //if(endCircs.Count == 2) {
+
+                //    Tile baseTile = TileController.instance.getCommonTile(endNeighbours, endCircs[0].allTilesInCircuit);
+                //    CircuitController.instance.joinCircuits(endCircs[0], this, baseTile);
+
+                //    Tile baseTile1 = TileController.instance.getCommonTile(endNeighbours, endCircs[1].allTilesInCircuit);
+                //    CircuitController.instance.joinCircuits(endCircs[1], endCircs[0], baseTile1);
+
+                //}
 
             }
 
             if (startCircs.Count > 0) {
 
-                if (startCircs.Count == 1) {
-                    // Tile in the base circuit being joined onto (by this new circuit)
-                    Tile baseTile = TileController.instance.getCommonTile(endNeighbours, startCircs[0].allTilesInCircuit);
-                    CircuitController.instance.joinCircuits(startCircs[0], this, baseTile);
-                }
+                for (int i = 0; i < startCircs.Count; i++) {
 
-                if (startCircs.Count == 2) {
-
-                    Tile baseTile = TileController.instance.getCommonTile(endNeighbours, startCircs[0].allTilesInCircuit);
-                    CircuitController.instance.joinCircuits(startCircs[0], this, baseTile);
-
-                    Tile baseTile1 = TileController.instance.getCommonTile(endNeighbours, startCircs[1].allTilesInCircuit);
-                    CircuitController.instance.joinCircuits(startCircs[1], startCircs[0], baseTile1);
+                    Tile baseTile = TileController.instance.getCommonTile(startNeighbours, startCircs[i].allTilesInCircuit);
+                    CircuitController.instance.joinCircuits(this, startCircs[i], baseTile);
 
                 }
+
+                //if (startCircs.Count == 1) {
+                //    // Tile in the base circuit being joined onto (by this new circuit)
+                //    Tile baseTile = TileController.instance.getCommonTile(endNeighbours, startCircs[0].allTilesInCircuit);
+                //    CircuitController.instance.joinCircuits(startCircs[0], this, baseTile);
+                //}
+
+                //if (startCircs.Count == 2) {
+
+                //    Tile baseTile = TileController.instance.getCommonTile(endNeighbours, startCircs[0].allTilesInCircuit);
+                //    CircuitController.instance.joinCircuits(startCircs[0], this, baseTile);
+
+                //    Tile baseTile1 = TileController.instance.getCommonTile(endNeighbours, startCircs[1].allTilesInCircuit);
+                //    CircuitController.instance.joinCircuits(startCircs[1], startCircs[0], baseTile1);
+
+                //}
 
             }
 
@@ -230,6 +262,7 @@ public class Circuit {
 
         // The debug arrow object for this segment
         public GameObject debugArrow;
+        public int debugColourIndex;
 
         // PHYSICS //
         // Voltage accross segment ends
@@ -238,7 +271,7 @@ public class Circuit {
         // Current through this segment
         public float current;
 
-        // Construct a single circuit segment -
+        // Construct a single circuit segment 
         // PARENT CIRCUIT MUST BE SET OUTSIDE CONSTRUCTOR
         public Segment(Entity entity) {
 
@@ -302,13 +335,6 @@ public class Circuit {
         }
 
        
-
-        public void appendComponent(Entity entity) {
-
-
-
-
-        }
 
     }
 

@@ -50,9 +50,21 @@ public class CircuitController : MonoBehaviour {
 
     public void drawCircuitDebug(Circuit circ) {
 
-        foreach(Circuit.Segment seg in circ.segments) {
+        if(circ.allDebugObjects == null) {
+            circ.allDebugObjects = new List<GameObject>();
+        }
+        else {
+            foreach(GameObject go in circ.allDebugObjects) {
+                Destroy(go);
+            }
+        }
 
-            drawSegmentEndsDebug(seg);
+
+        foreach(Circuit.Segment seg in circ.segments) {
+            seg.debugColourIndex = (lastColourIndex + 1) % (debugColours.Length - 1);
+            lastColourIndex++;
+            
+            //drawSegmentEndsDebug(seg);
 
             drawSegmentTileArrows(seg);
             
@@ -60,6 +72,9 @@ public class CircuitController : MonoBehaviour {
         foreach(Circuit.Junction junc in circ.juncs) {
             if(junc.juncDebugObject != null) {
                 Destroy(junc.juncDebugObject);
+            }
+            if(junc.juncTile.installedEntity.circSeg != null && junc.juncTile.installedEntity.circSeg.debugArrow != null) {
+                Destroy(junc.juncTile.installedEntity.circSeg.debugArrow);
             }
 
             GameObject juncDebug = new GameObject();
@@ -74,48 +89,64 @@ public class CircuitController : MonoBehaviour {
             sr.sprite = debugJuncSprite;
             sr.color = debugColours[(lastColourIndex + 1) % (debugColours.Length - 1)];
             lastColourIndex++;
+
+            
             sr.sortingLayerName = "UI";
             sr.sortingOrder = 0;
+
+            circ.allDebugObjects.Add(juncDebug);
         }
 
     }
 
     public void drawSegmentTileArrows(Circuit.Segment seg) {
-        
-        
-        // Loop through tiles in order from start to finish - 1
-        for (int i = 0; i < seg.allSegmentTiles.Count - 1; i++) {
-            Tile tile = seg.allSegmentTiles[i];
-            // Arrow should point towards next tile in segment
-            Dir dir = TileController.instance.getNeighbourTileOrientation(tile, seg.allSegmentTiles[i + 1]);
-            // Arrow initialises pointing N
-            float rot = BuildController.instance.angleFromDir(dir);
-            // Remove any old arrow
-            if(tile.installedEntity != null && tile.installedEntity.segArrow != null) {
-                Destroy(tile.installedEntity.segArrow);
+
+
+        // Loop through tiles in order from start to finish - segment must have > 1 tile
+        if (seg.allSegmentTiles.Count > 1) {
+            for (int i = 0; i < seg.allSegmentTiles.Count; i++) {
+                Tile tile = seg.allSegmentTiles[i];
+                Dir dir = Dir.N;
+                // Arrow should point towards next tile in segment
+                if (i < seg.allSegmentTiles.Count - 1) {
+                    dir = TileController.instance.getNeighbourTileOrientation(tile, seg.allSegmentTiles[i + 1]);
+                }
+                else {
+                    dir = BuildController.instance.oppositeDir(TileController.instance.getNeighbourTileOrientation(tile, seg.allSegmentTiles[i - 1]));
+                }
+                // Arrow initialises pointing N
+                float rot = BuildController.instance.angleFromDir(dir);
+
+                // Remove any old arrow
+                //if(tile.installedEntity != null && tile.installedEntity.segArrow != null) {
+                //    Destroy(tile.installedEntity.segArrow);
+                //}
+
+                GameObject arrow = new GameObject();
+                tile.installedEntity.segArrow = arrow;
+
+                arrow.transform.position = tile.getTileWorldPositon() + TileController.instance.tileCentreOffset;
+                arrow.transform.localScale = new Vector3(TileController.instance.cellSize, TileController.instance.cellSize, 1f);
+                arrow.transform.Rotate(90, rot, 0, Space.Self);
+
+
+                SpriteRenderer sr = arrow.AddComponent<SpriteRenderer>();
+                sr.sprite = debugArrowSprite;
+                sr.sortingLayerName = "UI";
+                sr.sortingOrder = 0;
+                sr.color = debugColours[seg.debugColourIndex];
+
+                seg.circuit.allDebugObjects.Add(arrow);
             }
-            GameObject arrow = new GameObject();
-            tile.installedEntity.segArrow = arrow;
-
-            arrow.transform.position = tile.getTileWorldPositon() + TileController.instance.tileCentreOffset;
-            arrow.transform.localScale = new Vector3(TileController.instance.cellSize, TileController.instance.cellSize, 1f);
-            arrow.transform.Rotate(90, rot, 0, Space.Self);
-
-
-            SpriteRenderer sr = arrow.AddComponent<SpriteRenderer>();
-            sr.sprite = debugArrowSprite;
-
-
         }
-        
 
     }
     public void drawSegmentEndsDebug(Circuit.Segment seg) {
 
         // Destroy any old arrow if existing
-        if (seg.debugArrow != null) {
-            Destroy(seg.debugArrow);
-        }
+        //if (seg.debugArrow != null) {
+        //    Destroy(seg.debugArrow);
+        //}
 
         Vector3 dir = seg.endTile.getTileWorldPositon() - seg.startTile.getTileWorldPositon();
         Vector3 startPos = seg.startTile.getTileWorldPositon() + TileController.instance.tileCentreOffset;
@@ -136,11 +167,14 @@ public class CircuitController : MonoBehaviour {
 
         SpriteRenderer sr = segArrow.AddComponent<SpriteRenderer>();
         sr.sprite = debugArrowEndsSprite;
-        sr.color = debugColours[(lastColourIndex + 1) % (debugColours.Length - 1)];
-        lastColourIndex++;
+        //sr.color = debugColours[(lastColourIndex + 1) % (debugColours.Length - 1)];
+        //lastColourIndex++;
+        
         sr.sortingLayerName = "UI";
         sr.sortingOrder = 0;
+        sr.color = debugColours[seg.debugColourIndex];
 
+        seg.circuit.allDebugObjects.Add(segArrow);
     }
 
 
@@ -257,7 +291,6 @@ public class CircuitController : MonoBehaviour {
         }
         
 
-
         // If base/join is wire segment
         if (baseType == SegmentType.Wire && joinType == SegmentType.Wire) {
             
@@ -266,10 +299,13 @@ public class CircuitController : MonoBehaviour {
 
         }
 
-        
-        
+        // Joining component/wire
+        if((baseType == SegmentType.Wire && joinType == SegmentType.Component) || (baseType == SegmentType.Component && joinType == SegmentType.Wire)) {
 
-        
+
+
+
+        }
 
         allCircuits.Remove(joinCirc);
         return baseCirc;
@@ -279,8 +315,7 @@ public class CircuitController : MonoBehaviour {
     // Segments must be NESW neighbours to join - joinTile will have just been appended to the base circuit
     public void joinSegments(Circuit.Segment baseSeg, Circuit.Segment joinSeg, Tile baseTile, Tile joinTile) {
         
-        // Destroy any debug preview on the join seg
-        Destroy(joinSeg.debugArrow);
+        
         // Remove the join seg from its circuit master list 
         //joinSeg.circuit.segments.Remove(joinSeg);
 
@@ -428,6 +463,13 @@ public class CircuitController : MonoBehaviour {
         Tile removedTile = entity.rootTile;
         Circuit.Segment baseSeg = entity.circSeg;
 
+        // Remove any old debug objects (from entire circuit)
+        if(entity.circSeg != null && entity.circSeg.circuit != null) {
+            foreach(GameObject go in entity.circSeg.circuit.allDebugObjects) {
+                Destroy(go);
+            }
+        }
+
         if (entity.entityType == EntityType.WirePiece) {
 
             // Entity was removed from start - set new start tile
@@ -435,14 +477,14 @@ public class CircuitController : MonoBehaviour {
                 baseSeg.allSegmentTiles.Remove(entity.rootTile);
                 baseSeg.startTile = getNearestTileInSegment(removedTile, baseSeg);
                 entity.circSeg = null;
-
+                triggerCircuitChanged(baseSeg.circuit);
             }
             // Entity removed from end
             else if (baseSeg.endTile == entity.rootTile) {
                 entity.circSeg.allSegmentTiles.Remove(entity.rootTile);
                 baseSeg.endTile = getNearestTileInSegment(removedTile, baseSeg);
                 entity.circSeg = null;
-
+                triggerCircuitChanged(baseSeg.circuit);
             }
             // Entity being removed from middle - must split circuit
             else {
@@ -452,7 +494,7 @@ public class CircuitController : MonoBehaviour {
 
             }
 
-            triggerCircuitChanged(baseSeg.circuit);
+            
 
         }
     }
