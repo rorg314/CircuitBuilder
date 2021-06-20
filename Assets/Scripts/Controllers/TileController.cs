@@ -10,18 +10,18 @@ public class TileController : MonoBehaviour {
     public static TileController instance;
 
     public TileGrid<Tile> tileGrid { get; set; }
-
-    public Vector3 tileCentreOffset;
+    public GameObject tileGridParent;
+    public Vector3 tileCentreOffset { get; set; }
 
     // Invoked when mouse enters a new tile 
     public event Action<Tile> cbMouseEnterNewTile;
 
     // Tile at grid origin (located at (0, 0))
-    public Tile zeroTile;
+    public Tile zeroTile { get; set; }
     // Old tile used when checking for new tile under mouse
-    public Tile oldTile;
+    public Tile oldTile { get; set; }
     // Centre tile (roughly)
-    public Tile centreTile;
+    public Tile centreTile { get; set;}
 
     public float cellSize = 10f;
 
@@ -37,7 +37,9 @@ public class TileController : MonoBehaviour {
         tileCentreOffset = new Vector3(cellSize, 0, cellSize) * 0.5f;
         
         
-        tileGrid = new TileGrid<Tile>(gridWidth, gridHeight, cellSize, Vector3.zero, (TileGrid<Tile> g, int x, int z) => new Tile(g, x, z));
+        tileGrid = new TileGrid<Tile>(tileGridParent, gridWidth, gridHeight, cellSize, Vector3.zero, (TileGrid<Tile> g, int x, int z) => new Tile(g, x, z));
+        
+
 
         zeroTile = new Tile(tileGrid, 0, 0);
         oldTile = zeroTile;

@@ -48,15 +48,28 @@ public class CircuitController : MonoBehaviour {
 
     }
 
+    public void destroyDebugObjects(Circuit circ) {
+
+        if(circ.allDebugObjects != null) {
+
+            foreach(GameObject go in circ.allDebugObjects) {
+
+                Destroy(go);
+
+            }
+            circ.allDebugObjects.Clear();
+        }
+
+
+    }
+
     public void drawCircuitDebug(Circuit circ) {
 
         if(circ.allDebugObjects == null) {
             circ.allDebugObjects = new List<GameObject>();
         }
         else {
-            foreach(GameObject go in circ.allDebugObjects) {
-                Destroy(go);
-            }
+            destroyDebugObjects(circ);
         }
 
 
@@ -253,24 +266,26 @@ public class CircuitController : MonoBehaviour {
     }
 
     // Use to append a single entity to this existing circuit
-    public Circuit appendCircuit(Circuit baseCirc, Circuit appendCirc, Entity entity) {
+    //public Circuit appendCircuit(Circuit baseCirc, Circuit appendCirc, Entity entity) {
 
-        // Get the tile in the base that this entity is appending to (returns first found)
-        Tile baseTile = getBaseTile(baseCirc, entity.rootTile);
+    //    // Get the tile in the base that this entity is appending to (returns first found)
+    //    Tile baseTile = getBaseTile(baseCirc, entity.rootTile);
 
-        // Join the circuits
-        joinCircuits(baseCirc, appendCirc, baseTile);
+    //    // Join the circuits
+    //    joinCircuits(baseCirc, appendCirc, baseTile);
         
-        // Add the appended tile to the base circ
-        baseCirc.allTilesInCircuit.Add(entity.rootTile);
+    //    // Add the appended tile to the base circ
+    //    baseCirc.allTilesInCircuit.Add(entity.rootTile);
 
-        triggerCircuitChanged(baseCirc);
+    //    //triggerCircuitChanged(baseCirc);
 
-        return baseCirc;
-    }
+    //    return baseCirc;
+    //}
     
     // Join two circuits 
     public Circuit joinCircuits(Circuit baseCirc, Circuit joinCirc, Tile baseTile) {
+
+        baseCirc.allTilesInCircuit.AddRange(joinCirc.allTilesInCircuit);
 
         Tile joinTile = getJoinTile(joinCirc, baseTile);
         SegmentType baseType = SegmentType.Null;
@@ -308,6 +323,11 @@ public class CircuitController : MonoBehaviour {
         }
 
         allCircuits.Remove(joinCirc);
+        // Remove debug objects from the (now old) joining circuit
+        destroyDebugObjects(joinCirc);
+
+        triggerCircuitChanged(baseCirc);
+
         return baseCirc;
 
     }
@@ -380,7 +400,7 @@ public class CircuitController : MonoBehaviour {
 
                 // Join seg becomes standalone circuit segment - should not join to anything until junc created
 
-                Circuit joinCircSeg = new Circuit(baseSeg);
+                //Circuit joinCircSeg = new Circuit(baseSeg);
 
 
                 Circuit.Junction junc = new Circuit.Junction(joinTile);
@@ -398,7 +418,7 @@ public class CircuitController : MonoBehaviour {
 
                 // Join seg becomes standalone circuit segment - should not join to anything until junc created
 
-                Circuit joinCircSeg = new Circuit(joinSeg);
+                //Circuit joinCircSeg = new Circuit(joinSeg);
 
 
                 Circuit.Junction junc = new Circuit.Junction(baseTile);
@@ -406,15 +426,11 @@ public class CircuitController : MonoBehaviour {
 
             }
             
-            
-            
-            
-
         }
 
         baseSeg.length = baseSeg.getSegmentLength();
 
-        triggerCircuitChanged(baseSeg.circuit);
+        //triggerCircuitChanged(baseSeg.circuit);
 
     }
 
@@ -464,11 +480,11 @@ public class CircuitController : MonoBehaviour {
         Circuit.Segment baseSeg = entity.circSeg;
 
         // Remove any old debug objects (from entire circuit)
-        if(entity.circSeg != null && entity.circSeg.circuit != null) {
-            foreach(GameObject go in entity.circSeg.circuit.allDebugObjects) {
-                Destroy(go);
-            }
-        }
+        //if(entity.circSeg != null && entity.circSeg.circuit != null) {
+        //    foreach(GameObject go in entity.circSeg.circuit.allDebugObjects) {
+        //        Destroy(go);
+        //    }
+        //}
 
         if (entity.entityType == EntityType.WirePiece) {
 

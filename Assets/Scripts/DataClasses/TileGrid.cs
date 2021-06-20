@@ -20,14 +20,16 @@ public class TileGrid<TGridObject> {
     private float cellSize;
     private Vector3 originPosition;
 
+    public GameObject tileGridParent { get; set; }
+
     bool debug = true;
     //Grid constructor, requires func to specify type of TGridObject
-    public TileGrid(int width, int height, float cellSize, Vector3 originPosition, Func<TileGrid<TGridObject>, int, int, TGridObject> createGridObject) {
+    public TileGrid(GameObject parent, int width, int height, float cellSize, Vector3 originPosition, Func<TileGrid<TGridObject>, int, int, TGridObject> createGridObject) {
         this.width = width;
         this.height = height;
         this.cellSize = cellSize;
         this.originPosition = originPosition;
-
+        this.tileGridParent = parent;
         gridArray = new TGridObject[width, height];
 
         for (int x = 0; x < gridArray.GetLength(0); x++) {
@@ -41,10 +43,10 @@ public class TileGrid<TGridObject> {
         if (debug) {
 
             TextMesh[,] debugTextArray = new TextMesh[width, height];
-
+            
             for (int x = 0; x < gridArray.GetLength(0); x++) {
                 for (int z = 0; z < gridArray.GetLength(1); z++) {
-                    debugTextArray[x, z] = UtilsClass.CreateWorldText(gridArray[x, z]?.ToString(), null, GetWorldPosition(x, z) + new Vector3(cellSize, 0, cellSize) * .5f, 15, Color.white, TextAnchor.MiddleCenter);
+                    debugTextArray[x, z] = UtilsClass.CreateWorldText(gridArray[x, z]?.ToString(), tileGridParent.transform, GetWorldPosition(x, z) + new Vector3(cellSize, 0, cellSize) * .5f, 15, Color.white, TextAnchor.MiddleCenter);
                     debugTextArray[x, z].transform.Rotate(90, 0, 0, Space.Self);
                     Debug.DrawLine(GetWorldPosition(x, z), GetWorldPosition(x, z + 1), Color.white, 100f);
                     Debug.DrawLine(GetWorldPosition(x, z), GetWorldPosition(x + 1, z), Color.white, 100f);

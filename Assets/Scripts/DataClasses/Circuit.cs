@@ -48,7 +48,7 @@ public class Circuit {
         }
         else {
             // Proceed with this circuit creation
-
+            CircuitController.instance.allCircuits.Add(this);
 
             // Create a segment and add to circuit
             Segment seg = new Segment(entity);
@@ -61,31 +61,45 @@ public class Circuit {
             Debug.Log("Number of circuits before: " + CircuitController.instance.allCircuits.Count);
 
 
-            if (neighbourCircs.Count == 3) {
-                // Need to join three circuits - append to one then join the others
-                Circuit baseCirc = CircuitController.instance.appendCircuit(neighbourCircs[0], this, entity);
 
-                Circuit newBase = CircuitController.instance.joinCircuits(baseCirc, neighbourCircs[1], entity.rootTile);
 
-                CircuitController.instance.joinCircuits(newBase, neighbourCircs[2], entity.rootTile);
+            //if (neighbourCircs.Count == 3) {
+            //    // Need to join three circuits - append to one then join the others
+            //    Circuit baseCirc = CircuitController.instance.appendCircuit(neighbourCircs[0], this, entity);
+
+                //    Circuit newBase = CircuitController.instance.joinCircuits(baseCirc, neighbourCircs[1], entity.rootTile);
+
+                //    CircuitController.instance.joinCircuits(newBase, neighbourCircs[2], entity.rootTile);
+                //}
+
+                //if (neighbourCircs.Count == 2) {
+                //    // Need to join two circuits - append to one then join
+                //    Circuit baseCirc = CircuitController.instance.appendCircuit(neighbourCircs[0], this, entity);
+
+                //    CircuitController.instance.joinCircuits(baseCirc, neighbourCircs[1], entity.rootTile);
+                //}
+
+            if(neighbourCircs.Count >= 1) {
+
+                for (int i = 0; i < neighbourCircs.Count; i++) {
+
+                    CircuitController.instance.joinCircuits(this, neighbourCircs[i], entity.rootTile);
+
+                }
+
             }
 
-            if (neighbourCircs.Count == 2) {
-                // Need to join two circuits - append to one then join
-                Circuit baseCirc = CircuitController.instance.appendCircuit(neighbourCircs[0], this, entity);
 
-                CircuitController.instance.joinCircuits(baseCirc, neighbourCircs[1], entity.rootTile);
-            }
 
-            else if (neighbourCircs.Count == 1) {
-                // Append to the existing circuit
-                CircuitController.instance.appendCircuit(neighbourCircs[0], this, entity);
+            //else if (neighbourCircs.Count == 1) {
+            //    // Append to the existing circuit
+            //    CircuitController.instance.appendCircuit(neighbourCircs[0], this, entity);
 
-            }
+            //}
 
             else if (neighbourCircs.Count == 0) {
                 // Created a new standalone circuit
-                CircuitController.instance.allCircuits.Add(this);
+                
 
                 CircuitController.instance.triggerCircuitChanged(this);
             }
@@ -108,6 +122,8 @@ public class Circuit {
 
         this.allTilesInCircuit.AddRange(segment.allSegmentTiles);
         this.segments.Add(segment);
+
+        CircuitController.instance.allCircuits.Add(this);
 
         // Check for neighbour circuits on either end of wiresegment
         if (segment.segmentType == SegmentType.Wire) {
@@ -178,7 +194,7 @@ public class Circuit {
 
                 // Created a standalone circuit
 
-                CircuitController.instance.allCircuits.Add(this);
+                
 
                 CircuitController.instance.triggerCircuitChanged(this);
             }
@@ -201,13 +217,14 @@ public class Circuit {
         this.juncs.Add(junc);
         this.allTilesInCircuit.Add(junc.juncTile);
 
+        CircuitController.instance.allCircuits.Add(this);
+
         // Merge with any surrounding circuits
         List<Tile> neighbours = junc.juncTile.getNeighbouringTiles();
         List<Circuit> neighbourCircs = CircuitController.instance.getNeighbourCircuitsExcludingThis(neighbours, this);
-
         // Join any found circuits to this base
-        foreach(Circuit circ in neighbourCircs) {
-
+        foreach (Circuit circ in neighbourCircs) {
+            
             CircuitController.instance.joinCircuits(this, circ, junc.juncTile);
             this.segments.AddRange(circ.segments);
             this.juncs.AddRange(circ.juncs);
