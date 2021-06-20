@@ -264,28 +264,11 @@ public class CircuitController : MonoBehaviour {
         return TileController.instance.getCommonTile(baseNeighbours, joinCirc.allTilesInCircuit);
 
     }
-
-    // Use to append a single entity to this existing circuit
-    //public Circuit appendCircuit(Circuit baseCirc, Circuit appendCirc, Entity entity) {
-
-    //    // Get the tile in the base that this entity is appending to (returns first found)
-    //    Tile baseTile = getBaseTile(baseCirc, entity.rootTile);
-
-    //    // Join the circuits
-    //    joinCircuits(baseCirc, appendCirc, baseTile);
-        
-    //    // Add the appended tile to the base circ
-    //    baseCirc.allTilesInCircuit.Add(entity.rootTile);
-
-    //    //triggerCircuitChanged(baseCirc);
-
-    //    return baseCirc;
-    //}
     
     // Join two circuits 
     public Circuit joinCircuits(Circuit baseCirc, Circuit joinCirc, Tile baseTile) {
 
-        baseCirc.allTilesInCircuit.AddRange(joinCirc.allTilesInCircuit);
+        destroyDebugObjects(joinCirc);
 
         Tile joinTile = getJoinTile(joinCirc, baseTile);
         SegmentType baseType = SegmentType.Null;
@@ -308,11 +291,67 @@ public class CircuitController : MonoBehaviour {
 
         // If base/join is wire segment
         if (baseType == SegmentType.Wire && joinType == SegmentType.Wire) {
-            
-            // Joining wireseg to wireseg
-            joinSegments(baseTile.installedEntity.circSeg, joinTile.installedEntity.circSeg, baseTile, joinTile);
+
+            Circuit.Segment baseSeg = baseTile.installedEntity.circSeg;
+            Circuit.Segment joinSeg = joinTile.installedEntity.circSeg;
+
+            // Check if joining segment starts/ends together - or if creating junction
+            if ((baseTile == baseSeg.startTile || baseTile == baseSeg.endTile) && (joinTile == joinSeg.startTile || joinTile == joinSeg.endTile)) {
+                // Joining wireseg to wireseg
+                joinSegments(baseSeg, joinSeg, baseTile, joinTile);
+
+                // Add any junctions
+                foreach (Circuit.Junction junc in joinCirc.juncs) {
+                    if (baseCirc.juncs.Contains(junc) == false) {
+                        baseCirc.juncs.Add(junc);
+                    }
+                }
+
+                // Add any segments not directly joined
+                baseCirc.segments.AddRange(joinCirc.segments);
+                // Change reference on all added segments 
+                foreach(Circuit.Segment seg in baseCirc.segments) {
+                    foreach(Tile t in seg.allSegmentTiles) {
+                        t.installedEntity.circSeg.circuit = baseCirc;
+                    }
+                }
+
+
+                triggerCircuitChanged(baseCirc);
+            }
+            else {
+                // Creating a junction
+                createJunction(baseSeg, joinSeg, baseTile, joinTile);
+            }
+
+
+            return baseCirc;
 
         }
+
+        if(baseType == SegmentType.Junction && joinType == SegmentType.Wire || baseType == SegmentType.Wire && joinType == SegmentType.Junction) {
+            // Joining segment/junction
+            
+
+            // Add the joined allTiles to the base circuit
+            baseCirc.allTilesInCircuit.AddRange(joinCirc.allTilesInCircuit);
+
+            
+            // Change the circuit ref on the joined tiles to the base circuit
+            foreach (Tile t in joinCirc.allTilesInCircuit) {
+                t.installedEntity.circSeg.circuit = baseCirc;
+            }
+
+
+            allCircuits.Remove(joinCirc);
+            
+            // Remove debug objects from the (now old) joining circuit
+            //destroyDebugObjects(joinCirc);
+
+            return baseCirc;
+
+        }
+
 
         // Joining component/wire
         if((baseType == SegmentType.Wire && joinType == SegmentType.Component) || (baseType == SegmentType.Component && joinType == SegmentType.Wire)) {
@@ -322,115 +361,117 @@ public class CircuitController : MonoBehaviour {
 
         }
 
-        allCircuits.Remove(joinCirc);
-        // Remove debug objects from the (now old) joining circuit
-        destroyDebugObjects(joinCirc);
-
-        triggerCircuitChanged(baseCirc);
-
-        return baseCirc;
+        return null;
 
     }
 
     // Segments must be NESW neighbours to join - joinTile will have just been appended to the base circuit
     public void joinSegments(Circuit.Segment baseSeg, Circuit.Segment joinSeg, Tile baseTile, Tile joinTile) {
-        
-        
-        // Remove the join seg from its circuit master list 
-        //joinSeg.circuit.segments.Remove(joinSeg);
 
-        // Check if joining segment starts/ends together - or if creating junction
-        if((baseTile == baseSeg.startTile || baseTile == baseSeg.endTile) && (joinTile == joinSeg.startTile || joinTile == joinSeg.endTile)) {
+        // Remove the join seg from join circuit master list (to avoid re adding)
+        joinSeg.circuit.segments.Remove(joinSeg);
 
-            if (baseSeg.endTile == baseTile) {
-                // Joining to end of base 
+        if (baseSeg.endTile == baseTile) {
+            // Joining to end of base 
 
-                if (joinTile == joinSeg.startTile) {
-                    // Joining start to end of base, new end is end of join seg
-                    baseSeg.endTile = joinSeg.endTile;
-                    // Add range to end of list of base seg
-                    baseSeg.allSegmentTiles.AddRange(joinSeg.allSegmentTiles);
-                }
-                else {
-                    // Joining end to end of base - join start is new base end 
-                    baseSeg.endTile = joinSeg.startTile;
-                    // Add the joined range in reverse order
-                    joinSeg.allSegmentTiles.Reverse();
-                    baseSeg.allSegmentTiles.AddRange(joinSeg.allSegmentTiles);
-                }
-            }
-            else if (baseSeg.startTile == baseTile) {
-                // Joining to start of base
-                if (joinTile == joinSeg.startTile) {
-                    // Joining start to start of base, new start is end of join seg
-                    baseSeg.startTile = joinSeg.endTile;
-                    // Reverse the joined tiles and add to beginning of base range
-                    joinSeg.allSegmentTiles.Reverse();
-                    baseSeg.allSegmentTiles.InsertRange(0, joinSeg.allSegmentTiles);
-                }
-                else {
-                    // Joining end to start of base 
-                    baseSeg.startTile = joinSeg.startTile;
-                    // Add range to beginning of base range
-                    baseSeg.allSegmentTiles.InsertRange(0, joinSeg.allSegmentTiles);
-                }
-            }
-
-            // Change the circuit ref on the joined segments to the base circuit
-            foreach (Tile t in joinSeg.circuit.allTilesInCircuit) {
-                t.installedEntity.circSeg.circuit = baseSeg.circuit;
-            }
-            // Replace the reference on all joinSegment tiles with the base segment
-            foreach (Tile t in joinSeg.allSegmentTiles) {
-                t.installedEntity.circSeg = baseSeg;
-            }
-
-
-        }
-        else { // Joining one segment to the middle of another
-            
-            if(baseTile == baseSeg.endTile || baseTile == baseSeg.startTile) {
-                // baseTile is end being joined into the middle of another segment (joinTile is not start/end of joinSeg)
-                if (joinTile.installedEntity != null) {
-                    removeEntityFromCircuit(joinTile.installedEntity);
-                }
-                else {
-                    Debug.LogError("Trying to create junction with no installed entity!");
-                }
-
-                // Join seg becomes standalone circuit segment - should not join to anything until junc created
-
-                //Circuit joinCircSeg = new Circuit(baseSeg);
-
-
-                Circuit.Junction junc = new Circuit.Junction(joinTile);
-                Circuit juncCirc = new Circuit(junc);
-
+            if (joinTile == joinSeg.startTile) {
+                // Joining start to end of base, new end is end of join seg
+                baseSeg.endTile = joinSeg.endTile;
+                // Add range to end of list of base seg
+                baseSeg.allSegmentTiles.AddRange(joinSeg.allSegmentTiles);
             }
             else {
-                // baseTile is in the middle of the base segment - joinTile start/end of joinSeg
-                if (baseTile.installedEntity != null) {
-                    removeEntityFromCircuit(baseTile.installedEntity);
-                }
-                else {
-                    Debug.LogError("Trying to create junction with no installed entity!");
-                }
-
-                // Join seg becomes standalone circuit segment - should not join to anything until junc created
-
-                //Circuit joinCircSeg = new Circuit(joinSeg);
-
-
-                Circuit.Junction junc = new Circuit.Junction(baseTile);
-                Circuit juncCirc = new Circuit(junc);
-
+                // Joining end to end of base - join start is new base end 
+                baseSeg.endTile = joinSeg.startTile;
+                // Add the joined range in reverse order
+                joinSeg.allSegmentTiles.Reverse();
+                baseSeg.allSegmentTiles.AddRange(joinSeg.allSegmentTiles);
             }
-            
         }
+        else if (baseSeg.startTile == baseTile) {
+            // Joining to start of base
+            if (joinTile == joinSeg.startTile) {
+                // Joining start to start of base, new start is end of join seg
+                baseSeg.startTile = joinSeg.endTile;
+                // Reverse the joined tiles and add to beginning of base range
+                joinSeg.allSegmentTiles.Reverse();
+                baseSeg.allSegmentTiles.InsertRange(0, joinSeg.allSegmentTiles);
+            }
+            else {
+                // Joining end to start of base 
+                baseSeg.startTile = joinSeg.startTile;
+                // Add range to beginning of base range
+                baseSeg.allSegmentTiles.InsertRange(0, joinSeg.allSegmentTiles);
+            }
+        }
+
+
+        // Replace the reference on all joinSegment tiles with the base segment
+        foreach (Tile t in joinSeg.allSegmentTiles) {
+            t.installedEntity.circSeg = baseSeg;
+        }
+        //// Change the circuit ref on the joined tiles to the base circuit
+        //foreach (Tile t in joinSeg.allSegmentTiles) {
+        //    t.installedEntity.circSeg.circuit = baseSeg.circuit;
+        //}
+
+        // Add the joined allTiles to the base circuit
+        baseSeg.circuit.allTilesInCircuit.AddRange(joinSeg.circuit.allTilesInCircuit);
+
+        allCircuits.Remove(joinSeg.circuit);
+            
+        // Remove debug objects from the old joining circuit
+        //destroyDebugObjects(joinSeg.circuit);
 
         baseSeg.length = baseSeg.getSegmentLength();
 
-        //triggerCircuitChanged(baseSeg.circuit);
+
+    }
+
+
+    public void createJunction(Circuit.Segment baseSeg, Circuit.Segment joinSeg, Tile baseTile, Tile joinTile) {
+
+
+
+        if (baseTile == baseSeg.endTile || baseTile == baseSeg.startTile) {
+            // baseTile is end being joined into the middle of another segment (joinTile is not start/end of joinSeg)
+            if (joinTile.installedEntity != null) {
+                removeEntityFromCircuit(joinTile.installedEntity);
+            }
+            else {
+                Debug.LogError("Trying to create junction with no installed entity!");
+            }
+
+            // Join seg becomes standalone circuit segment - should not join to anything until junc created
+
+            //Circuit joinCircSeg = new Circuit(baseSeg);
+
+
+            Circuit.Junction junc = new Circuit.Junction(joinTile);
+            Circuit juncCirc = new Circuit(junc);
+
+        }
+        else {
+            // baseTile is in the middle of the base segment - joinTile start/end of joinSeg
+            if (baseTile.installedEntity != null) {
+                removeEntityFromCircuit(baseTile.installedEntity);
+            }
+            else {
+                Debug.LogError("Trying to create junction with no installed entity!");
+            }
+
+            // Join seg becomes standalone circuit segment - should not join to anything until junc created
+
+            //Circuit joinCircSeg = new Circuit(joinSeg);
+
+
+            Circuit.Junction junc = new Circuit.Junction(baseTile);
+            Circuit juncCirc = new Circuit(junc);
+
+        }
+
+
+
 
     }
 

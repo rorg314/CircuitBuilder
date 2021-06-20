@@ -55,9 +55,9 @@ public class Tile {
 
     public override string ToString() {
         
-        if(this.installedEntity != null) {
-            return this.installedEntity.entityName.ToString() + " - " + this.x.ToString() + ", " + this.z.ToString();
-        }
+        //if(this.installedEntity != null) {
+        //    return this.installedEntity.entityName.ToString() + " - " + this.x.ToString() + ", " + this.z.ToString();
+        //}
 
         return this.x.ToString() + ", " + this.z.ToString();
     }
