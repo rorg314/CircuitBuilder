@@ -300,21 +300,23 @@ public class CircuitController : MonoBehaviour {
                 // Joining wireseg to wireseg
                 joinSegments(baseSeg, joinSeg, baseTile, joinTile);
 
-                // Add any junctions
-                foreach (Circuit.Junction junc in joinCirc.juncs) {
-                    if (baseCirc.juncs.Contains(junc) == false) {
-                        baseCirc.juncs.Add(junc);
-                    }
-                }
+                //// Add any junctions
+                //foreach (Circuit.Junction junc in joinCirc.juncs) {
+                //    if (baseCirc.juncs.Contains(junc) == false) {
+                //        baseCirc.juncs.Add(junc);
+                //    }
+                //}
 
-                // Add any segments not directly joined
-                baseCirc.segments.AddRange(joinCirc.segments);
-                // Change reference on all added segments 
-                foreach(Circuit.Segment seg in baseCirc.segments) {
-                    foreach(Tile t in seg.allSegmentTiles) {
-                        t.installedEntity.circSeg.circuit = baseCirc;
-                    }
-                }
+                //// Add any segments not directly joined
+                //baseCirc.segments.AddRange(joinCirc.segments);
+                //// Change reference on all added segments 
+                //foreach(Circuit.Segment seg in baseCirc.segments) {
+                //    foreach(Tile t in seg.allSegmentTiles) {
+                //        t.installedEntity.circSeg.circuit = baseCirc;
+                //    }
+                //}
+
+                transferSegsAndJuncs(baseCirc, joinCirc);
 
 
                 triggerCircuitChanged(baseCirc);
@@ -329,32 +331,58 @@ public class CircuitController : MonoBehaviour {
 
         }
 
-        if(baseType == SegmentType.Junction && joinType == SegmentType.Wire || baseType == SegmentType.Wire && joinType == SegmentType.Junction) {
-            // Joining segment/junction
+        if(baseType == SegmentType.Junction && joinType == SegmentType.Wire) {
+            // Base junction is having segments joined to it - only when constructing a new junction
             
 
             // Add the joined allTiles to the base circuit
             baseCirc.allTilesInCircuit.AddRange(joinCirc.allTilesInCircuit);
 
-            
-            // Change the circuit ref on the joined tiles to the base circuit
-            foreach (Tile t in joinCirc.allTilesInCircuit) {
-                t.installedEntity.circSeg.circuit = baseCirc;
-            }
 
+            updateCircuitReferences(baseCirc, joinCirc);
+            //// Change the circuit ref on the joined tiles to the base circuit
+            //foreach (Tile t in joinCirc.allTilesInCircuit) {
+            //    if (t.installedEntity != null) {
+                    
+            //        if (t.installedEntity.circSeg != null) {
+            //            t.installedEntity.circSeg.circuit = baseCirc;
+            //        }
+            //        else if (t.installedEntity.circJunc != null) {
+            //            t.installedEntity.circJunc.circuit = baseCirc;
+            //        }
+            //    }
+            //    else {
+            //        Debug.LogError("Tile in circuit had no installed entity! - Tile: " + t.ToString());
+            //    }
+            //}
+
+            
 
             allCircuits.Remove(joinCirc);
-            
-            // Remove debug objects from the (now old) joining circuit
-            //destroyDebugObjects(joinCirc);
+
 
             return baseCirc;
 
         }
+        if(baseType == SegmentType.Wire && joinType == SegmentType.Junction) {
 
+            // Base segment is having a junction joined to it (built segment next to existing junction)
+            
+            // Add the joined allTiles to the base circuit
+            baseCirc.allTilesInCircuit.AddRange(joinCirc.allTilesInCircuit);
+
+            transferSegsAndJuncs(baseCirc, joinCirc);
+
+            updateCircuitReferences(baseCirc, joinCirc);
+            
+            allCircuits.Remove(joinCirc);
+
+
+            return baseCirc;
+        }
 
         // Joining component/wire
-        if((baseType == SegmentType.Wire && joinType == SegmentType.Component) || (baseType == SegmentType.Component && joinType == SegmentType.Wire)) {
+        if ((baseType == SegmentType.Wire && joinType == SegmentType.Component) || (baseType == SegmentType.Component && joinType == SegmentType.Wire)) {
 
 
 
@@ -362,6 +390,46 @@ public class CircuitController : MonoBehaviour {
         }
 
         return null;
+
+    }
+
+    public void transferSegsAndJuncs(Circuit baseCirc, Circuit joinCirc) {
+
+        // Add any junctions
+        foreach (Circuit.Junction junc in joinCirc.juncs) {
+            if (baseCirc.juncs.Contains(junc) == false) {
+                baseCirc.juncs.Add(junc);
+            }
+        }
+
+        // Add any segments not directly joined
+        baseCirc.segments.AddRange(joinCirc.segments);
+        // Change reference on all added segments 
+        foreach (Circuit.Segment seg in baseCirc.segments) {
+            foreach (Tile t in seg.allSegmentTiles) {
+                t.installedEntity.circSeg.circuit = baseCirc;
+            }
+        }
+
+    }
+
+    public void updateCircuitReferences(Circuit baseCirc, Circuit joinCirc) {
+
+        // Change the circuit ref on the joined tiles to the base circuit
+        foreach (Tile t in joinCirc.allTilesInCircuit) {
+            if (t.installedEntity != null) {
+
+                if (t.installedEntity.circSeg != null) {
+                    t.installedEntity.circSeg.circuit = baseCirc;
+                }
+                else if (t.installedEntity.circJunc != null) {
+                    t.installedEntity.circJunc.circuit = baseCirc;
+                }
+            }
+            else {
+                Debug.LogError("Tile in circuit had no installed entity! - Tile: " + t.ToString());
+            }
+        }
 
     }
 

@@ -1,0 +1,13 @@
+InputController.Instance.breakk == true
+
+
+
+ - Junction works when joining single segment to existing segment
+	 - Does not work merging three/four segment ends
+
+
+ - Creating multiple junctions in a circuit causes problems
+
+ - Creating loops from two segments connected to the same junction has problems
+
+
