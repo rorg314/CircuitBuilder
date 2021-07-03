@@ -60,15 +60,7 @@ public class Circuit {
 
             Debug.Log("Number of circuits before: " + CircuitController.instance.allCircuits.Count);
 
-            //if(neighbourCircs.Count >= 1) {
-
-            //    for (int i = 0; i < neighbourCircs.Count; i++) {
-
-            //        CircuitController.instance.joinCircuits(this, neighbourCircs[i], entity.rootTile);
-
-            //    }
-
-            //}
+            
             if(neighbourCircs.Count == 1) {
                 CircuitController.instance.joinCircuits(this, neighbourCircs[0], entity.rootTile);
             }
@@ -174,10 +166,9 @@ public class Circuit {
         foreach (Circuit circ in neighbourCircs) {
             
             CircuitController.instance.joinCircuits(this, circ, junc.juncTile);
-            this.segments.AddRange(circ.segments);
-            this.juncs.AddRange(circ.juncs);
+            
         }
-        CircuitController.instance.triggerCircuitChanged(this);
+        //CircuitController.instance.triggerCircuitChanged(this);
 
     }
 

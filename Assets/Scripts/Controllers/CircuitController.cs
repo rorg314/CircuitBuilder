@@ -97,6 +97,8 @@ public class CircuitController : MonoBehaviour {
             juncDebug.transform.localScale = new Vector3(TileController.instance.cellSize, TileController.instance.cellSize, 0);
             juncDebug.transform.position = junc.juncTile.getTileWorldPositon() + TileController.instance.tileCentreOffset;
             juncDebug.transform.Rotate(-90, 0, 0, Space.Self);
+            juncDebug.name = "junc " + junc.juncTile.ToString();
+
 
             SpriteRenderer sr = juncDebug.AddComponent<SpriteRenderer>();
             sr.sprite = debugJuncSprite;
@@ -142,6 +144,7 @@ public class CircuitController : MonoBehaviour {
                 arrow.transform.localScale = new Vector3(TileController.instance.cellSize, TileController.instance.cellSize, 1f);
                 arrow.transform.Rotate(90, rot, 0, Space.Self);
 
+                arrow.name = "seg " + tile.ToString();
 
                 SpriteRenderer sr = arrow.AddComponent<SpriteRenderer>();
                 sr.sprite = debugArrowSprite;
@@ -235,14 +238,28 @@ public class CircuitController : MonoBehaviour {
     public List<Circuit> getNeighbourCircuitsExcludingThis(List<Tile> neighbourTiles, Circuit thisCirc) {
 
         List<Circuit> neighbourCircs = new List<Circuit>();
+        
         foreach (Tile t in neighbourTiles) {
-            if (t.installedEntity != null && t.installedEntity.circSeg != null && t.installedEntity.circSeg.circuit != thisCirc) {
+            if (t.installedEntity != null && (t.installedEntity.circSeg != null || t.installedEntity.circJunc != null))  {
+                Circuit circ;
+                // Get the reference to the parent circuit (could probably streamline this?)
+                if (t.installedEntity.circSeg != null) {
+                    circ = t.installedEntity.circSeg.circuit;
+                }
+                else {
+                    circ = t.installedEntity.circJunc.circuit;
+                }
+                // Skip if the circuit is thisCirc
+                if(circ == thisCirc) {
+                    continue;
+                }
+                
                 // Skip if already added
-                if (neighbourCircs.Contains(t.installedEntity.circSeg.circuit)) {
+                if (neighbourCircs.Contains(circ)) {
                     continue;
                 }
                 // Append to neighbour circs
-                neighbourCircs.Add(t.installedEntity.circSeg.circuit);
+                neighbourCircs.Add(circ);
             }
         }
 
@@ -300,24 +317,10 @@ public class CircuitController : MonoBehaviour {
                 // Joining wireseg to wireseg
                 joinSegments(baseSeg, joinSeg, baseTile, joinTile);
 
-                //// Add any junctions
-                //foreach (Circuit.Junction junc in joinCirc.juncs) {
-                //    if (baseCirc.juncs.Contains(junc) == false) {
-                //        baseCirc.juncs.Add(junc);
-                //    }
-                //}
-
-                //// Add any segments not directly joined
-                //baseCirc.segments.AddRange(joinCirc.segments);
-                //// Change reference on all added segments 
-                //foreach(Circuit.Segment seg in baseCirc.segments) {
-                //    foreach(Tile t in seg.allSegmentTiles) {
-                //        t.installedEntity.circSeg.circuit = baseCirc;
-                //    }
-                //}
 
                 transferSegsAndJuncs(baseCirc, joinCirc);
 
+                updateCircuitReferences(baseCirc, joinCirc);
 
                 triggerCircuitChanged(baseCirc);
             }
@@ -338,28 +341,13 @@ public class CircuitController : MonoBehaviour {
             // Add the joined allTiles to the base circuit
             baseCirc.allTilesInCircuit.AddRange(joinCirc.allTilesInCircuit);
 
+            transferSegsAndJuncs(baseCirc, joinCirc);
 
             updateCircuitReferences(baseCirc, joinCirc);
-            //// Change the circuit ref on the joined tiles to the base circuit
-            //foreach (Tile t in joinCirc.allTilesInCircuit) {
-            //    if (t.installedEntity != null) {
-                    
-            //        if (t.installedEntity.circSeg != null) {
-            //            t.installedEntity.circSeg.circuit = baseCirc;
-            //        }
-            //        else if (t.installedEntity.circJunc != null) {
-            //            t.installedEntity.circJunc.circuit = baseCirc;
-            //        }
-            //    }
-            //    else {
-            //        Debug.LogError("Tile in circuit had no installed entity! - Tile: " + t.ToString());
-            //    }
-            //}
-
-            
 
             allCircuits.Remove(joinCirc);
 
+            triggerCircuitChanged(baseCirc);
 
             return baseCirc;
 
@@ -371,12 +359,15 @@ public class CircuitController : MonoBehaviour {
             // Add the joined allTiles to the base circuit
             baseCirc.allTilesInCircuit.AddRange(joinCirc.allTilesInCircuit);
 
+            // Transfer all segments and junctions to new base circuit
             transferSegsAndJuncs(baseCirc, joinCirc);
 
+            // Update all references on join circuit to new base circuit
             updateCircuitReferences(baseCirc, joinCirc);
             
             allCircuits.Remove(joinCirc);
 
+            triggerCircuitChanged(baseCirc);
 
             return baseCirc;
         }
@@ -397,18 +388,26 @@ public class CircuitController : MonoBehaviour {
 
         // Add any junctions
         foreach (Circuit.Junction junc in joinCirc.juncs) {
+            
             if (baseCirc.juncs.Contains(junc) == false) {
                 baseCirc.juncs.Add(junc);
             }
         }
 
         // Add any segments not directly joined
-        baseCirc.segments.AddRange(joinCirc.segments);
-        // Change reference on all added segments 
-        foreach (Circuit.Segment seg in baseCirc.segments) {
-            foreach (Tile t in seg.allSegmentTiles) {
-                t.installedEntity.circSeg.circuit = baseCirc;
+        //baseCirc.segments.AddRange(joinCirc.segments);
+        foreach(Circuit.Segment seg in joinCirc.segments) {
+
+            if(baseCirc.segments.Contains(seg) == false) {
+                baseCirc.segments.Add(seg);
             }
+        }
+
+        // Transfer any debug objects
+        if(joinCirc.allDebugObjects != null && joinCirc.allDebugObjects.Count > 0) {
+
+            baseCirc.allDebugObjects.AddRange(joinCirc.allDebugObjects);
+
         }
 
     }
@@ -478,28 +477,18 @@ public class CircuitController : MonoBehaviour {
         foreach (Tile t in joinSeg.allSegmentTiles) {
             t.installedEntity.circSeg = baseSeg;
         }
-        //// Change the circuit ref on the joined tiles to the base circuit
-        //foreach (Tile t in joinSeg.allSegmentTiles) {
-        //    t.installedEntity.circSeg.circuit = baseSeg.circuit;
-        //}
 
         // Add the joined allTiles to the base circuit
         baseSeg.circuit.allTilesInCircuit.AddRange(joinSeg.circuit.allTilesInCircuit);
 
         allCircuits.Remove(joinSeg.circuit);
-            
-        // Remove debug objects from the old joining circuit
-        //destroyDebugObjects(joinSeg.circuit);
 
         baseSeg.length = baseSeg.getSegmentLength();
-
 
     }
 
 
     public void createJunction(Circuit.Segment baseSeg, Circuit.Segment joinSeg, Tile baseTile, Tile joinTile) {
-
-
 
         if (baseTile == baseSeg.endTile || baseTile == baseSeg.startTile) {
             // baseTile is end being joined into the middle of another segment (joinTile is not start/end of joinSeg)
@@ -509,11 +498,6 @@ public class CircuitController : MonoBehaviour {
             else {
                 Debug.LogError("Trying to create junction with no installed entity!");
             }
-
-            // Join seg becomes standalone circuit segment - should not join to anything until junc created
-
-            //Circuit joinCircSeg = new Circuit(baseSeg);
-
 
             Circuit.Junction junc = new Circuit.Junction(joinTile);
             Circuit juncCirc = new Circuit(junc);
@@ -528,18 +512,11 @@ public class CircuitController : MonoBehaviour {
                 Debug.LogError("Trying to create junction with no installed entity!");
             }
 
-            // Join seg becomes standalone circuit segment - should not join to anything until junc created
-
-            //Circuit joinCircSeg = new Circuit(joinSeg);
-
 
             Circuit.Junction junc = new Circuit.Junction(baseTile);
             Circuit juncCirc = new Circuit(junc);
 
         }
-
-
-
 
     }
 
