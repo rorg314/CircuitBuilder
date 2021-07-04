@@ -70,8 +70,9 @@ public class Circuit {
 
                 // Recursively check for new neighbours and join as appropriate
                 List<Circuit> newNeighbours = checkForNeighbourCircuits(entity, this);
-                if(newNeighbours.Count > 0) {
+                while(newNeighbours.Count > 0) {
                     CircuitController.instance.joinCircuits(this, newNeighbours[0], entity.rootTile);
+                    newNeighbours = checkForNeighbourCircuits(entity, this);
                 }
 
             }
@@ -212,7 +213,9 @@ public class Circuit {
         public List<Tile> allSegmentTiles;
 
         // List of connected segments 
-        List<Segment> connectedSegments;
+        List<Segment> connectedSegs;
+        // List of connected juncs
+        List<Junction> connectedJuncs;
 
         // The debug arrow object for this segment
         public GameObject debugArrow;
@@ -230,7 +233,8 @@ public class Circuit {
         public Segment(Entity entity) {
 
             this.allSegmentTiles = new List<Tile>();
-            this.connectedSegments = new List<Segment>();
+            this.connectedSegs = new List<Segment>();
+            this.connectedJuncs = new List<Junction>();
 
             if (entity.entityType == EntityType.WirePiece) {
                 // Segment is directed based on current flow - from start (pos) to end (neg) tile - negative current flows from end to start
@@ -262,7 +266,8 @@ public class Circuit {
         public Segment(List<Tile> allSegmentTiles) {
 
             this.allSegmentTiles = allSegmentTiles;
-            this.connectedSegments = new List<Segment>();
+            this.connectedSegs = new List<Segment>();
+            this.connectedJuncs = new List<Junction>();
             this.startTile = allSegmentTiles[0];
             this.endTile = allSegmentTiles[allSegmentTiles.Count - 1];
             this.length = getSegmentLength();

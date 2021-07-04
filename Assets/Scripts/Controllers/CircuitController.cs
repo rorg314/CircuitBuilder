@@ -282,6 +282,7 @@ public class CircuitController : MonoBehaviour {
 
     }
     
+
     // Join two circuits 
     public Circuit joinCircuits(Circuit baseCirc, Circuit joinCirc, Tile baseTile) {
 
@@ -304,7 +305,6 @@ public class CircuitController : MonoBehaviour {
         if (joinTile.installedEntity.circSeg != null) {
             joinType = joinTile.installedEntity.circSeg.segmentType;
         }
-        
 
         // If base/join is wire segment
         if (baseType == SegmentType.Wire && joinType == SegmentType.Wire) {
@@ -329,33 +329,10 @@ public class CircuitController : MonoBehaviour {
                 createJunction(baseSeg, joinSeg, baseTile, joinTile);
             }
 
-
-            return baseCirc;
-
         }
 
-        if(baseType == SegmentType.Junction && joinType == SegmentType.Wire) {
-            // Base junction is having segments joined to it - only when constructing a new junction
-            
+        if((baseType == SegmentType.Junction && joinType == SegmentType.Wire) || (baseType == SegmentType.Wire && joinType == SegmentType.Junction)) {
 
-            // Add the joined allTiles to the base circuit
-            baseCirc.allTilesInCircuit.AddRange(joinCirc.allTilesInCircuit);
-
-            transferSegsAndJuncs(baseCirc, joinCirc);
-
-            updateCircuitReferences(baseCirc, joinCirc);
-
-            allCircuits.Remove(joinCirc);
-
-            triggerCircuitChanged(baseCirc);
-
-            return baseCirc;
-
-        }
-        if(baseType == SegmentType.Wire && joinType == SegmentType.Junction) {
-
-            // Base segment is having a junction joined to it (built segment next to existing junction)
-            
             // Add the joined allTiles to the base circuit
             baseCirc.allTilesInCircuit.AddRange(joinCirc.allTilesInCircuit);
 
@@ -364,12 +341,12 @@ public class CircuitController : MonoBehaviour {
 
             // Update all references on join circuit to new base circuit
             updateCircuitReferences(baseCirc, joinCirc);
-            
+
             allCircuits.Remove(joinCirc);
 
             triggerCircuitChanged(baseCirc);
 
-            return baseCirc;
+
         }
 
         // Joining component/wire
@@ -434,6 +411,15 @@ public class CircuitController : MonoBehaviour {
 
     // Segments must be NESW neighbours to join - joinTile will have just been appended to the base circuit
     public void joinSegments(Circuit.Segment baseSeg, Circuit.Segment joinSeg, Tile baseTile, Tile joinTile) {
+
+        // Joining the ends of a single segment to form a loop - might decide this is not allowed 
+        if(baseSeg == joinSeg) {
+
+
+
+        }
+
+
 
         // Remove the join seg from join circuit master list (to avoid re adding)
         joinSeg.circuit.segments.Remove(joinSeg);
