@@ -48,6 +48,29 @@ public class CircuitController : MonoBehaviour {
 
     }
 
+    public void updateAllCircuits() {
+
+        foreach (Circuit circ in allCircuits) {
+            destroyDebugObjects(circ);
+            triggerCircuitChanged(circ);
+        }
+
+    }
+
+    public void toggleDebug() {
+
+        showDebug = !showDebug;
+
+        if (showDebug) {
+            cbOnCircuitChanged += drawCircuitDebug;
+        }
+        else {
+            cbOnCircuitChanged -= drawCircuitDebug;
+        }
+
+        updateAllCircuits();
+    }
+
     public void destroyDebugObjects(Circuit circ) {
 
         if(circ.allDebugObjects != null) {
@@ -64,6 +87,10 @@ public class CircuitController : MonoBehaviour {
     }
 
     public void drawCircuitDebug(Circuit circ) {
+
+        if(showDebug == false) {
+            return;
+        }
 
         if(circ.allDebugObjects == null) {
             circ.allDebugObjects = new List<GameObject>();
@@ -264,8 +291,8 @@ public class CircuitController : MonoBehaviour {
         }
 
         return neighbourCircs;
-
     }
+
     // Find the tile in the base that this is adjacent to this append tile
     public Tile getBaseTile(Circuit baseCirc, Tile appendTile) {
 
@@ -282,9 +309,32 @@ public class CircuitController : MonoBehaviour {
 
     }
     
+    public bool checkValidSegmentJoin(Circuit.Segment baseSeg, Circuit.Segment joinSeg) {
+
+        // Check if this join would form a looped segment
+        
+        // Check if joining end/end start/start start/end of another segment
+        if((baseSeg.endTile == joinSeg.endTile) || (baseSeg.startTile == joinSeg.endTile) || (baseSeg.endTile == joinSeg.startTile) || (baseSeg.startTile == joinSeg.startTile)) {
+            // Do not allow if these are the same segment
+            if(baseSeg == joinSeg) {
+                return false;
+            }
+            
+            // Check if joining two segment ends that both meet the same junction
+            foreach(Circuit.Junction junc in baseSeg.connectedJuncs) {
+                if (joinSeg.connectedJuncs.Contains(junc)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+
 
     // Join two circuits 
-    public Circuit joinCircuits(Circuit baseCirc, Circuit joinCirc, Tile baseTile) {
+    public void joinCircuits(Circuit baseCirc, Circuit joinCirc, Tile baseTile) {
 
         destroyDebugObjects(joinCirc);
 
@@ -315,8 +365,12 @@ public class CircuitController : MonoBehaviour {
             // Check if joining segment starts/ends together - or if creating junction
             if ((baseTile == baseSeg.startTile || baseTile == baseSeg.endTile) && (joinTile == joinSeg.startTile || joinTile == joinSeg.endTile)) {
                 // Joining wireseg to wireseg
+                if(checkValidSegmentJoin(baseSeg, joinSeg) == false) {
+                    Debug.LogWarning("Cannot join these segments!");
+                    return;
+                }
+                
                 joinSegments(baseSeg, joinSeg, baseTile, joinTile);
-
 
                 transferSegsAndJuncs(baseCirc, joinCirc);
 
@@ -357,7 +411,7 @@ public class CircuitController : MonoBehaviour {
 
         }
 
-        return null;
+        return;
 
     }
 

@@ -3,7 +3,7 @@ InputController.Instance.breakk == true
 
 
 
-- Junction does not work merging three segment ends
+- Some situations will want to join to the same circuit - rework neighbourCircuitsExcludingThis
 
 
 - Need to sort out loops from single segment / two connected to same junction

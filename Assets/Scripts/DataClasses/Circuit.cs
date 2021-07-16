@@ -71,8 +71,18 @@ public class Circuit {
                 // Recursively check for new neighbours and join as appropriate
                 List<Circuit> newNeighbours = checkForNeighbourCircuits(entity, this);
                 while(newNeighbours.Count > 0) {
-                    CircuitController.instance.joinCircuits(this, newNeighbours[0], entity.rootTile);
-                    newNeighbours = checkForNeighbourCircuits(entity, this);
+                    // Check if this circuit is still valid (still in all circuits) - creating a junc would lead to one extra join happening to this old circuit
+                    if (CircuitController.instance.allCircuits.Contains(this)) {
+
+                        CircuitController.instance.joinCircuits(this, newNeighbours[0], entity.rootTile);
+                        newNeighbours = checkForNeighbourCircuits(entity, this);
+
+                    }
+                    else {
+                        // Bail from this circuit constructor
+                        return;
+                    }
+                    
                 }
 
             }
@@ -136,6 +146,11 @@ public class Circuit {
             }
 
             if(startCircs.Count == 0 && endCircs.Count == 0) {
+                
+                
+                
+                
+                
                 // Created a standalone circuit
                 CircuitController.instance.triggerCircuitChanged(this);
             }
@@ -169,7 +184,6 @@ public class Circuit {
             CircuitController.instance.joinCircuits(this, circ, junc.juncTile);
             
         }
-        //CircuitController.instance.triggerCircuitChanged(this);
 
     }
 
@@ -190,7 +204,6 @@ public class Circuit {
         List<Circuit> neighbourCircs = CircuitController.instance.getNeighbourCircuitsExcludingThis(neighbours, thisCircuit);
 
         return neighbourCircs;
-
 
     }
 
@@ -215,7 +228,7 @@ public class Circuit {
         // List of connected segments 
         List<Segment> connectedSegs;
         // List of connected juncs
-        List<Junction> connectedJuncs;
+        public List<Junction> connectedJuncs;
 
         // The debug arrow object for this segment
         public GameObject debugArrow;
@@ -257,7 +270,7 @@ public class Circuit {
                 this.segmentType = SegmentType.Component;
             }
 
-            // Segment either ends on component or at junction
+            setConnectedJuncs();
 
         }
 
@@ -280,6 +293,8 @@ public class Circuit {
                 }
             }
 
+            setConnectedJuncs();
+
         }
 
         public int getSegmentLength() {
@@ -293,8 +308,26 @@ public class Circuit {
 
         }
 
-        
-       
+        public void setConnectedJuncs() {
+
+            if(connectedJuncs.Count > 0) {
+                connectedJuncs.Clear();
+            }
+
+            List<Tile> allNeighbours = new List<Tile>();
+            allNeighbours.AddRange(startTile.getNeighbouringTiles());
+            allNeighbours.AddRange(endTile.getNeighbouringTiles());
+
+            foreach(Tile t in allNeighbours) {
+
+                if(t.installedEntity != null && t.installedEntity.circJunc != null) {
+                    // Register this connected junction
+                    connectedJuncs.Add(t.installedEntity.circJunc);
+                    // Update the junction 
+                    t.installedEntity.circJunc.setJunctionSegments();
+                }
+            }
+        }
 
     }
 
@@ -318,7 +351,6 @@ public class Circuit {
 
         public GameObject juncDebugObject;
 
-
         public Junction(Tile juncTile) {
 
             this.juncTile = juncTile;
@@ -336,12 +368,21 @@ public class Circuit {
 
         // Sets the junction segments from neighbouring tiles
         public void setJunctionSegments() {
-
-            // Segments flowing into this junction (ending at this junction)
-            inSegs = new List<Segment>();
-            // Segs flowing out - starting at this junc
-            outSegs = new List<Segment>();
-
+            if(inSegs == null) {
+                // Segments flowing into this junction (ending at this junction)
+                inSegs = new List<Segment>();
+            }
+            else {
+                inSegs.Clear();
+            }
+            if(outSegs == null) {
+                // Segs flowing out - starting at this junc
+                outSegs = new List<Segment>();
+            }
+            else {
+                outSegs.Clear();
+            }
+            
             List<Tile> neighbours = juncTile.getNeighbouringTiles();
 
             foreach (Tile t in neighbours) {
@@ -362,7 +403,7 @@ public class Circuit {
 
     }
 
-    // Defines a closed loop in the circuit - contains segments, junctions and components in the loop
+    // Defines a closed loop in the circuit - contains segments and junctions in the loop
     public class CircuitLoop {
 
         // All segments within this loop
