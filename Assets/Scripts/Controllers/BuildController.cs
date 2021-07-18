@@ -78,15 +78,30 @@ public class BuildController : MonoBehaviour {
         // Make sure any remaining previews are removed
         removeOldPreview();
 
-        
+        canPlace = tryPlaceEntity(protoToBuild, rootTile, dirToBuild);
 
-        canBuild = tryPlaceEntity(protoToBuild, rootTile, dirToBuild);
+        previewCircuit = testCircuitPlacement(protoToBuild, rootTile);
 
-        Entity entity = placeEntity(protoToBuild, rootTile, dirToBuild, canBuild, false);
+        if (canPlace && previewCircuit != null) {
+            validBuild = true;
+        }
+        else {
+            validBuild = false;
+        }
 
-        if (canBuild) {
+        Entity entity = placeEntitySprite(protoToBuild, rootTile, dirToBuild, validBuild, false);
+
+
+        if (validBuild) {
+
+            // Replace the prototype in the circuit with the actual entity
+            CircuitController.instance.createCircuit(entity, false);
+
+            CircuitController.instance.allCircuits.Remove(previewCircuit);
+
             // Build will have completed successfully, add to master lists
             MasterController.instance.allEntities.Add(entity);
+            
             if (entity.entityType == EntityType.Component) {
                 MasterController.instance.allComponentEntities.Add(entity);
 
@@ -95,19 +110,18 @@ public class BuildController : MonoBehaviour {
                 
                 MasterController.instance.allWireEntities.Add(entity);
 
-                // Create the wirepiece for this wire
-
             }
             // Create the circuit for this entity, and merge with surrounding
             // Create a new circuit for this entity (only when building) - will merge with any surrounding circuits if found
-            new Circuit(entity);
-            
-
+            //Circuit circ = new Circuit(entity);
+            //CircuitController.instance.allCircuits.Add(circ);
+            //Circuit circ = CircuitController.instance.createCircuit(entity, false);
         }
         // Trying to build but cant - 
-        if (!canBuild) {
-
+        if (!canPlace) {
             
+            // Do nothing
+            return;
 
         }
     }
@@ -122,9 +136,18 @@ public class BuildController : MonoBehaviour {
 
         Entity proto = getPrototype(entityNameToBuild);
 
-        canBuild = tryPlaceEntity(proto, rootTile, dirToBuild);
+        canPlace = tryPlaceEntity(proto, rootTile, dirToBuild);
 
-        previewEntity = placeEntity(proto, rootTile, dirToBuild, canBuild, true);
+        previewCircuit = testCircuitPlacement(proto, rootTile);
+
+        if (canPlace && previewCircuit != null) {
+            validBuild = true;
+        }
+        else {
+            validBuild = false;
+        }
+
+        previewEntity = placeEntitySprite(proto, rootTile, dirToBuild, validBuild, true);
 
     }
     // The tile to display the preview (need reference so when cycling build dir the preview updates)
@@ -132,14 +155,26 @@ public class BuildController : MonoBehaviour {
     // The preview entity (must be nullified when starting a build)
     public Entity previewEntity = null;
     // True if can build
-    public bool canBuild = false;
+    public bool canPlace = false;
+    // Not null if the circuit was valid
+    public Circuit previewCircuit = null;
+    // True if this is a valid build
+    bool validBuild = false;
     
     public void removeOldPreview() {
         
         
         if(previewEntity != null) {
+
+            // Check if preview circuit has no tiles (preview entity already removed)
+            if(previewCircuit.allTilesInCircuit.Count == 0) {
+                CircuitController.instance.allCircuits.Remove(previewCircuit);
+            }
+
+            CircuitController.instance.removeEntityFromCircuit(previewEntity);
             EntitySpriteController.instance.onEntityRemoved(previewEntity);
             previewEntity = null;
+            validBuild = false;
         }
 
     }
@@ -162,11 +197,91 @@ public class BuildController : MonoBehaviour {
 
     public bool tryPlaceEntity(Entity proto, Tile rootTile, Dir dir) {
 
-
         if (checkAllTiles(proto, rootTile, dir) == false) {
             return false;
         }
-        else { return true; }
+        
+        return true;
+    }
+
+    // Test if this entity would create a valid circuit
+    public Circuit testCircuitPlacement(Entity proto, Tile rootTile) {
+
+        // Temporarily set the root tile on the prototype - MUST remove after
+        proto.rootTile = rootTile;
+        // Temporarily install the proto on the root tile (return false if already have installed entity)
+        if(rootTile.installedEntity == null) {
+            rootTile.installedEntity = proto;
+        }
+        else {
+            return null;
+        }
+        Circuit testCircuit = CircuitController.instance.createCircuit(proto, true);
+        
+        if (testCircuit != null) {
+
+            // Created a valid circuit
+
+            // Remove the test prototype
+            CircuitController.instance.removeEntityFromCircuit(proto);
+
+            //Remove all references added to the proto
+            proto.rootTile = null;
+            rootTile.installedEntity = null;
+
+            return testCircuit;
+
+        }
+        else {
+
+            // Remove the test prototype
+            CircuitController.instance.removeEntityFromCircuit(proto);
+
+            //Remove all references added to the proto
+            proto.rootTile = null;
+            rootTile.installedEntity = null;
+            return null;
+        }
+
+
+
+
+        
+        //Circuit testCircuit = new Circuit(proto, true);
+
+        //if (testCircuit.validCircuit) {
+            
+        //    // The testCircuit has become the circuit that was tested joining to
+            
+        //    // Add to allCircuits iff contains more tiles than the preview only
+        //    List<Tile> previewTiles = proto.getCoveredTiles(rootTile);
+        //    foreach (Tile t in testCircuit.allTilesInCircuit) {
+        //        if(previewTiles.Contains(t) == false) {
+        //            // Circuit contains tiles that are not part of the preview only - is a previously constructed valid circuit
+        //            if (CircuitController.instance.allCircuits.Contains(testCircuit) == false) {
+        //                CircuitController.instance.allCircuits.Add(testCircuit);
+        //            }
+        //        }
+        //    }
+        //    // If circuit placement was valid, remove the proto from circuit and return true
+        //    CircuitController.instance.removeEntityFromCircuit(proto);
+            
+        //    // Remove all references added to the proto
+        //    proto.rootTile = null;
+        //    rootTile.installedEntity = null;
+            
+        //    return true;
+        //}
+        //else {
+        //    // Circuit will not have been fully created
+        //    CircuitController.instance.removeEntityFromCircuit(proto);
+        //    // The testCircuit has become the old circuit that was tested joining to 
+        //    CircuitController.instance.allCircuits.Add(testCircuit);
+        //    proto.rootTile = null;
+        //    rootTile.installedEntity = null;
+        //    return false;
+        //}
+
 
     }
 
@@ -184,9 +299,8 @@ public class BuildController : MonoBehaviour {
 
 
     // Place the entity on the rootTile 
-    public Entity placeEntity(Entity proto, Tile rootTile, Dir dir, bool canBuild, bool isGhost) {
+    public Entity placeEntitySprite(Entity proto, Tile rootTile, Dir dir, bool canBuild, bool isGhost) {
         Entity entity;
-
         
         if (canBuild == false) {
             //Debug.Log("Invalid placement!");
@@ -340,7 +454,7 @@ public class BuildController : MonoBehaviour {
                 for (int i = 0; i < rotationsToReset(prototype.buildDir); i++) {
                     EntitySpriteController.instance.rotateEntityOffsets(prototype);
                 }
-                canBuild = false;
+                canPlace = false;
                 return false;
             }
         }
@@ -351,7 +465,7 @@ public class BuildController : MonoBehaviour {
         }
 
         // No covered tiles have installed entities
-        canBuild = true;
+        canPlace = true;
         return true;
     }
 

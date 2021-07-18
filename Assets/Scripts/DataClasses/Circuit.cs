@@ -16,6 +16,22 @@ public class Circuit {
     public List<Tile> allTilesInCircuit;
     // List of all debug objects in for this circuit
     public List<GameObject> allDebugObjects;
+    // For testing if this is a valid circuit placement
+    public bool validCircuit;
+
+    // Copy constructor
+    public Circuit(Circuit other) {
+        // Store reference to the circuit was copied from (for removing later)
+        Circuit otherCirc = other;
+
+        this.juncs = other.juncs;
+        this.segments = other.segments;
+        this.allTilesInCircuit = other.allTilesInCircuit;
+        this.allDebugObjects = other.allDebugObjects;
+        this.validCircuit = other.validCircuit;
+
+    }
+
 
 
 
@@ -24,20 +40,17 @@ public class Circuit {
 
 
     // Constructor for single entity circuits
-    public Circuit(Entity entity) {
+    public Circuit(Entity entity, bool test=false) {
 
         // Create a new circuit containing this entity
-
         this.juncs = new List<Junction>();
         this.segments = new List<Segment>();
         this.allTilesInCircuit = new List<Tile>();
-
-        // Create a new circuit - will be merged with others if found 
-
         this.allTilesInCircuit.Add(entity.rootTile);
+        
 
         // Check for neighbouring circuits and append if appropriate
-        List<Circuit> neighbourCircs = checkForNeighbourCircuits(entity, this);
+        List<Circuit> neighbourCircs = checkForNeighbourCircuits(entity, this, true);
 
         // Check special case for making a new 4-way junction
         if (neighbourCircs.Count == 4) {
@@ -46,10 +59,11 @@ public class Circuit {
             Circuit newCirc = new Circuit(junc);
 
         }
+
         else {
             // Proceed with this circuit creation
-            CircuitController.instance.allCircuits.Add(this);
 
+            
             // Create a segment and add to circuit
             Segment seg = new Segment(entity);
             segments.Add(seg);
@@ -59,38 +73,51 @@ public class Circuit {
             seg.circuit = this;
 
             Debug.Log("Number of circuits before: " + CircuitController.instance.allCircuits.Count);
-
             
-            if(neighbourCircs.Count == 1) {
-                CircuitController.instance.joinCircuits(this, neighbourCircs[0], entity.rootTile);
-            }
-            else if(neighbourCircs.Count > 1) {
-                // Join to the first found neighbour
-                CircuitController.instance.joinCircuits(this, neighbourCircs[0], entity.rootTile);
+            //if(neighbourCircs.Count > 0) {
 
-                // Recursively check for new neighbours and join as appropriate
-                List<Circuit> newNeighbours = checkForNeighbourCircuits(entity, this);
-                while(newNeighbours.Count > 0) {
-                    // Check if this circuit is still valid (still in all circuits) - creating a junc would lead to one extra join happening to this old circuit
-                    if (CircuitController.instance.allCircuits.Contains(this)) {
+            //    Circuit copiedBase = new Circuit(this);
+            //    // Join to the first found neighbour (not including itself)
+            //    CircuitController.instance.joinCircuits(this, neighbourCircs[0], entity.rootTile);
 
-                        CircuitController.instance.joinCircuits(this, newNeighbours[0], entity.rootTile);
-                        newNeighbours = checkForNeighbourCircuits(entity, this);
+            //    // Recursively check for new neighbours and join as appropriate
+            //    List<Circuit> newNeighbours = checkForNeighbourCircuits(entity, this, true);
+            //    while(newNeighbours.Count > 0) {
+            //        // Check if this circuit is still valid (still in all circuits) - creating a junc would lead to one extra join happening to this old circuit
+            //        if (CircuitController.instance.allCircuits.Contains(this)) {
 
-                    }
-                    else {
-                        // Bail from this circuit constructor
-                        return;
-                    }
-                    
-                }
+            //            CircuitController.instance.joinCircuits(this, newNeighbours[0], entity.rootTile);
+            //            newNeighbours = checkForNeighbourCircuits(entity, this, true);
 
-            }
+            //        }
+            //        else {
+            //            // Bail from this circuit constructor
+            //            validCircuit = false;
+                        
+            //            //CircuitController.instance.allCircuits.Remove(this);
+            //            return;
+            //        }
+            //    }
+            //    // Found no other neighbour circuits - check if trying to join to the same circuit and do not allow
+            //    if(checkForNeighbourCircuits(entity, this, false).Count > 1) {
 
-            else if (neighbourCircs.Count == 0) {
-                // Created a new standalone circuit
-                CircuitController.instance.triggerCircuitChanged(this);
-            }
+            //        // If neighbours > 1 this means the circuit is trying to join to itself
+            //        validCircuit = false;
+            //        //CircuitController.instance.allCircuits.Remove(this);
+            //        return;
+
+            //    }
+
+            //}
+
+            //else if (neighbourCircs.Count == 0) {
+            //    // Created a new standalone circuit
+            //    CircuitController.instance.triggerCircuitChanged(this);
+            //}
+
+            // If reached this point - circuit placement was valid 
+            validCircuit = true;
+
 
             Debug.Log("Number of circuits after: " + CircuitController.instance.allCircuits.Count);
         }
@@ -128,7 +155,7 @@ public class Circuit {
                 for (int i = 0; i < endCircs.Count; i++) {
 
                     Tile baseTile = TileController.instance.getCommonTile(endNeighbours, endCircs[i].allTilesInCircuit);
-                    CircuitController.instance.joinCircuits(this, endCircs[i], baseTile);
+                    CircuitController.instance.tryJoinCircuits(this, endCircs[i], baseTile);
 
                 }
 
@@ -139,7 +166,7 @@ public class Circuit {
                 for (int i = 0; i < startCircs.Count; i++) {
 
                     Tile baseTile = TileController.instance.getCommonTile(startNeighbours, startCircs[i].allTilesInCircuit);
-                    CircuitController.instance.joinCircuits(this, startCircs[i], baseTile);
+                    CircuitController.instance.tryJoinCircuits(this, startCircs[i], baseTile);
 
                 }
 
@@ -181,14 +208,14 @@ public class Circuit {
         // Join any found circuits to this base
         foreach (Circuit circ in neighbourCircs) {
             
-            CircuitController.instance.joinCircuits(this, circ, junc.juncTile);
+            CircuitController.instance.tryJoinCircuits(this, circ, junc.juncTile);
             
         }
 
     }
 
     // Check if a newly created circuit should be added to any surrounding circuits
-    public List<Circuit> checkForNeighbourCircuits(Entity entity, Circuit thisCircuit) {
+    public List<Circuit> checkForNeighbourCircuits(Entity entity, Circuit thisCircuit, bool excludeThis) {
 
         // Check if the newly created circuit is surrounded by any existing circuits
         List<Tile> neighbours = new List<Tile>();
@@ -201,7 +228,14 @@ public class Circuit {
 
             neighbours = entity.rootTile.getNeighbouringTiles();
         }
-        List<Circuit> neighbourCircs = CircuitController.instance.getNeighbourCircuitsExcludingThis(neighbours, thisCircuit);
+        List<Circuit> neighbourCircs = new List<Circuit>();
+        if (excludeThis) {
+            neighbourCircs = CircuitController.instance.getNeighbourCircuitsExcludingThis(neighbours, thisCircuit);
+        }
+        else {
+            neighbourCircs = CircuitController.instance.getNeighbourCircuits(neighbours);
+        }
+
 
         return neighbourCircs;
 
