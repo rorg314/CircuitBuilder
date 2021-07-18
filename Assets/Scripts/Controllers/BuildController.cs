@@ -166,12 +166,17 @@ public class BuildController : MonoBehaviour {
         
         if(previewEntity != null) {
 
-            // Check if preview circuit has no tiles (preview entity already removed)
-            if(previewCircuit.allTilesInCircuit.Count == 0) {
-                CircuitController.instance.allCircuits.Remove(previewCircuit);
-            }
+            if(previewCircuit != null) {
 
-            CircuitController.instance.removeEntityFromCircuit(previewEntity);
+                // Check if preview circuit has no tiles (preview entity already removed)
+                if (previewCircuit.allTilesInCircuit.Count == 0) {
+                    CircuitController.instance.allCircuits.Remove(previewCircuit);
+                }
+
+                CircuitController.instance.removeEntityFromCircuit(previewEntity);
+
+            }
+            
             EntitySpriteController.instance.onEntityRemoved(previewEntity);
             previewEntity = null;
             validBuild = false;
