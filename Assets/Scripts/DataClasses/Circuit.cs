@@ -8,6 +8,11 @@ public enum SegmentType { Wire, Component, Junction, Null};
 
 public class Circuit {
 
+
+    public override string ToString() {
+        return "Circuit_" + circName;
+    }
+
     // Junctions in the circuit
     public List<Junction> juncs;
     // Wire segments
@@ -18,6 +23,9 @@ public class Circuit {
     public List<GameObject> allDebugObjects;
     // For testing if this is a valid circuit placement
     public bool validCircuit;
+
+    public string circName;
+
 
     // Copy constructor
     public Circuit(Circuit other) {
@@ -40,14 +48,14 @@ public class Circuit {
 
 
     // Constructor for single entity circuits
-    public Circuit(Entity entity, bool test=false) {
+    public Circuit(Entity entity, bool test = false) {
 
         // Create a new circuit containing this entity
         this.juncs = new List<Junction>();
         this.segments = new List<Segment>();
         this.allTilesInCircuit = new List<Tile>();
         this.allTilesInCircuit.Add(entity.rootTile);
-        
+
 
         // Check for neighbouring circuits and append if appropriate
         List<Circuit> neighbourCircs = checkForNeighbourCircuits(entity, this, true);
@@ -63,7 +71,7 @@ public class Circuit {
         else {
             // Proceed with this circuit creation
 
-            
+
             // Create a segment and add to circuit
             Segment seg = new Segment(entity);
             segments.Add(seg);
@@ -72,8 +80,8 @@ public class Circuit {
             // Set references to parent circuit on segment (already set on entity)
             seg.circuit = this;
 
-            Debug.Log("Number of circuits before: " + CircuitController.instance.allCircuits.Count);
-            
+           
+
             //if(neighbourCircs.Count > 0) {
 
             //    Circuit copiedBase = new Circuit(this);
@@ -93,7 +101,7 @@ public class Circuit {
             //        else {
             //            // Bail from this circuit constructor
             //            validCircuit = false;
-                        
+
             //            //CircuitController.instance.allCircuits.Remove(this);
             //            return;
             //        }
@@ -119,12 +127,13 @@ public class Circuit {
             validCircuit = true;
 
 
-            Debug.Log("Number of circuits after: " + CircuitController.instance.allCircuits.Count);
+            
         }
-    }
 
+    }
     
-    
+   
+
 
     // For constructing with existing segment
     public Circuit(Segment segment) {
@@ -190,6 +199,11 @@ public class Circuit {
 
     // Construct with junction - merges surrounding circuits 
     public Circuit(Junction junc) {
+
+        // DEBUG //
+        circName = CircuitController.instance.incrementalCircNumber.ToString();
+        CircuitController.instance.incrementalCircNumber++;
+
 
         junc.circuit = this;
 

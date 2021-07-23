@@ -3,9 +3,10 @@ InputController.Instance.breakk == true
 
 
 
-- Some situations will want to join to the same circuit - rework neighbourCircuitsExcludingThis
 
+Check valid circuit mostly working 
+- need to fix new junctions being created by the preview entity 
 
-- Need to sort out loops from single segment / two connected to same junction
-	- Add list of connected junctions 
+- still can't join two segments together
 
+- still can't join to existing junctions

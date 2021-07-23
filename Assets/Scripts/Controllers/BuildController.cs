@@ -239,53 +239,14 @@ public class BuildController : MonoBehaviour {
         }
         else {
 
-            // Remove the test prototype
-            CircuitController.instance.removeEntityFromCircuit(proto);
+            // Remove the test prototype (already removed)
+            //CircuitController.instance.removeEntityFromCircuit(proto);
 
             //Remove all references added to the proto
             proto.rootTile = null;
             rootTile.installedEntity = null;
             return null;
         }
-
-
-
-
-        
-        //Circuit testCircuit = new Circuit(proto, true);
-
-        //if (testCircuit.validCircuit) {
-            
-        //    // The testCircuit has become the circuit that was tested joining to
-            
-        //    // Add to allCircuits iff contains more tiles than the preview only
-        //    List<Tile> previewTiles = proto.getCoveredTiles(rootTile);
-        //    foreach (Tile t in testCircuit.allTilesInCircuit) {
-        //        if(previewTiles.Contains(t) == false) {
-        //            // Circuit contains tiles that are not part of the preview only - is a previously constructed valid circuit
-        //            if (CircuitController.instance.allCircuits.Contains(testCircuit) == false) {
-        //                CircuitController.instance.allCircuits.Add(testCircuit);
-        //            }
-        //        }
-        //    }
-        //    // If circuit placement was valid, remove the proto from circuit and return true
-        //    CircuitController.instance.removeEntityFromCircuit(proto);
-            
-        //    // Remove all references added to the proto
-        //    proto.rootTile = null;
-        //    rootTile.installedEntity = null;
-            
-        //    return true;
-        //}
-        //else {
-        //    // Circuit will not have been fully created
-        //    CircuitController.instance.removeEntityFromCircuit(proto);
-        //    // The testCircuit has become the old circuit that was tested joining to 
-        //    CircuitController.instance.allCircuits.Add(testCircuit);
-        //    proto.rootTile = null;
-        //    rootTile.installedEntity = null;
-        //    return false;
-        //}
 
 
     }

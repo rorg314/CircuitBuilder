@@ -25,7 +25,7 @@ public class CameraController : MonoBehaviour {
     float minY = 0.25f;
     float maxY = 250f;
     //Base camera rotation angle - set xrot to 90 for topdown view
-    Vector3 baseAngles = new Vector3(90f, 0f, 0f);
+    Vector3 baseAngles = new Vector3(70f, 0f, 0f);
     Vector3 currentAngles = new Vector3(0f, 0f, 0f);
     //Height below which camera starts rotating - set zero to disable
     float turnHeight = 0f;

@@ -125,7 +125,7 @@ public class EntitySpriteController : MonoBehaviour {
 
         }
         else {
-            Debug.LogWarning("Trying to change entity not in dict!?" + entity.entityName);
+            Debug.LogWarning("Trying to change entity not in dict!?" + entity.ToString());
             return;
         }
         
