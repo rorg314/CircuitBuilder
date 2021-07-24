@@ -839,7 +839,6 @@ public class CircuitController : MonoBehaviour {
 
         }
 
-
     }
     
     public void removeEntityFromCircuit(Entity entity, bool test=false) {
@@ -860,18 +859,22 @@ public class CircuitController : MonoBehaviour {
             // Removing a segment 
             // Entity was removed from start - set new start tile
             if (baseSeg.startTile == removedTile) {
+                checkForDisconnectingJunction(entity.rootTile, baseSeg);
                 baseSeg.allSegmentTiles.Remove(removedTile);
                 baseSeg.circuit.allTilesInCircuit.Remove(removedTile);
                 baseSeg.startTile = getNearestTileInSegment(removedTile, baseSeg);
                 entity.circSeg = null;
+                
                 triggerCircuitChanged(baseSeg.circuit);
             }
             // Entity removed from end
             else if (baseSeg.endTile == removedTile) {
+                checkForDisconnectingJunction(entity.rootTile, baseSeg);
                 entity.circSeg.allSegmentTiles.Remove(removedTile);
                 baseSeg.circuit.allTilesInCircuit.Remove(removedTile);
                 baseSeg.endTile = getNearestTileInSegment(removedTile, baseSeg);
                 entity.circSeg = null;
+                
                 triggerCircuitChanged(baseSeg.circuit);
             }
             // Entity being removed from middle - must split circuit
@@ -902,7 +905,7 @@ public class CircuitController : MonoBehaviour {
             baseJunc.circuit = null;
 
         }
-        // Do not recalculate if testing a junction join
+        
         
         // Recalculate all junctions in the base circ (OPTIMISE)
         if (baseCirc != null) {
@@ -913,7 +916,28 @@ public class CircuitController : MonoBehaviour {
         
     }
 
-    // Disconnect a segment from a junction that is being removed from circuit
+    // Check if removing this entity needs to disconnect that segment from a junction
+    public void checkForDisconnectingJunction(Tile baseTile, Circuit.Segment segment) {
+
+        List<Tile> neighbours = baseTile.getNeighbouringTiles();
+
+        foreach(Tile t in neighbours) {
+            if(t.installedEntity != null) {
+
+                if(t.installedEntity.circJunc != null) {
+
+                    removeSegmentFromJunction(t.installedEntity.circJunc.circuit, t.installedEntity.circJunc, segment);
+
+                }
+
+            }
+
+
+        }
+
+    }
+
+    // Disconnect a segment from a junction 
     public void removeSegmentFromJunction(Circuit baseCirc, Circuit.Junction baseJunc, Circuit.Segment segment) {
 
         // Remove the segment
@@ -936,8 +960,9 @@ public class CircuitController : MonoBehaviour {
             }
 
         }
-
-
+        
+        // Recalculate the base junction
+        //baseJunc.setJunctionSegments();
 
     }
 
