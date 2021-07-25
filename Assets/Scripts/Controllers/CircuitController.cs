@@ -326,12 +326,26 @@ public class CircuitController : MonoBehaviour {
 
     }
     
-    public bool checkValidSegmentJoin(Circuit.Segment baseSeg, Circuit.Segment joinSeg) {
+    public bool checkValidSegmentJoin(Circuit.Segment baseSeg, Circuit.Segment joinSeg, Tile baseTile) {
 
         // Check if this join would form a looped segment
         
         if(baseSeg == joinSeg) {
             return false;
+        }
+
+        // Check if joining two segments that meet at the same junction (creating a looped square with one corner already a junction)
+        List<Circuit.Segment> neighbourSegs = getNeighbourCircuitSegments(baseTile.getNeighbouringTiles());
+
+        if(neighbourSegs.Count == 2) {
+
+            foreach(Circuit.Junction junc in neighbourSegs[0].connectedJuncs) {
+
+                if (neighbourSegs[1].connectedJuncs.Contains(junc)) {
+                    // Segments connect to same junction - do not allow
+                    return false;
+                }
+            }
         }
 
 
@@ -439,6 +453,12 @@ public class CircuitController : MonoBehaviour {
                     }
                     
                     int baseIndex = entity.circSeg.allSegmentTiles.IndexOf(baseTile);
+                    if(entity.circSeg.allSegmentTiles.Count == baseIndex) {
+
+                        return null;
+
+                    }
+                    // Else these are in sequence in the same segment
                     if(neighbourTiles.Contains(entity.circSeg.allSegmentTiles[baseIndex + 1]) && neighbourTiles.Contains(entity.circSeg.allSegmentTiles[baseIndex - 1])) {
                         return newBase;
                     }
@@ -476,7 +496,7 @@ public class CircuitController : MonoBehaviour {
             // Check if joining segment starts/ends together - or if creating junction
             if ((baseTile == baseSeg.startTile || baseTile == baseSeg.endTile) && (joinTile == joinSeg.startTile || joinTile == joinSeg.endTile)) {
                 // Joining wireseg to wireseg
-                if (checkValidSegmentJoin(baseSeg, joinSeg) == false) {
+                if (checkValidSegmentJoin(baseSeg, joinSeg, baseTile) == false) {
                     Debug.LogWarning("Cannot join these segments!");
                     // Return without joining
                     return null;

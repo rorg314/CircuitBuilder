@@ -6,4 +6,4 @@ InputController.Instance.breakk == true
 
 Check valid circuit mostly working 
 
-- debug junction creation - still issue with setting connected segments 
+- something weird with creating a loop with a junction on one corner (just created junction and then try to make segment in the tile diagonal to the junction)
