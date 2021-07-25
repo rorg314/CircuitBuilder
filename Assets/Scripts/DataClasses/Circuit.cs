@@ -184,6 +184,9 @@ public class Circuit {
             
         }
 
+        // Set the junctions connected segments
+        junc.setJunctionSegments();
+
     }
 
     // Check if a newly created circuit should be added to any surrounding circuits
@@ -368,7 +371,7 @@ public class Circuit {
 
             }
 
-            setJunctionSegments();
+            //setJunctionSegments();
 
         }
 
@@ -397,9 +400,18 @@ public class Circuit {
                     // Seg flowing into junction
                     if (t.installedEntity.circSeg.endTile == t) {
                         inSegs.Add(t.installedEntity.circSeg);
+                        // Also set the connected junc on this seg 
+                        if(t.installedEntity.circSeg.connectedJuncs.Contains(this) == false) {
+                            t.installedEntity.circSeg.connectedJuncs.Add(this);
+                        }
+                        
                     }
                     else if (t.installedEntity.circSeg.startTile == t) {
                         outSegs.Add(t.installedEntity.circSeg);
+                        // Also set the connected junc on this seg 
+                        if (t.installedEntity.circSeg.connectedJuncs.Contains(this) == false) {
+                            t.installedEntity.circSeg.connectedJuncs.Add(this);
+                        }
                     }
                 }
 

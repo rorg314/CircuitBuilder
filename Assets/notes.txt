@@ -5,8 +5,5 @@ InputController.Instance.breakk == true
 
 
 Check valid circuit mostly working 
-- need to fix new junctions being created by the preview entity 
 
-- still can't join two segments together
-
-- still can't join to existing junctions
+- debug junction creation - still issue with setting connected segments 

@@ -145,7 +145,7 @@ public class CircuitController : MonoBehaviour {
         }
 
     }
-
+    
     public void drawSegmentTileArrows(Circuit.Segment seg) {
 
 
@@ -500,7 +500,7 @@ public class CircuitController : MonoBehaviour {
                 return juncCirc;
             }
         }
-
+        // Joining segment and a junction
         if ((baseType == SegmentType.Junction && joinType == SegmentType.Wire) || (baseType == SegmentType.Wire && joinType == SegmentType.Junction)) {
 
             // Add the joined allTiles to the base circuit
@@ -551,75 +551,8 @@ public class CircuitController : MonoBehaviour {
 
         return (baseType, joinType);
 
-
     }
 
-
-    //// Join two circuits 
-    //public void joinCircuits(Circuit baseCirc, Circuit joinCirc, Tile baseTile) {
-
-    //    destroyDebugObjects(joinCirc);
-        
-        
-    //    Tile joinTile = getJoinTile(joinCirc, baseTile);
-        
-    //    (SegmentType, SegmentType) types = getJoinTypes(baseTile, joinTile);
-    //    SegmentType baseType = types.Item1;
-    //    SegmentType joinType = types.Item2;
-
-    //    // If base/join is wire segment
-    //    if (baseType == SegmentType.Wire && joinType == SegmentType.Wire) {
-
-    //        Circuit.Segment baseSeg = baseTile.installedEntity.circSeg;
-    //        Circuit.Segment joinSeg = joinTile.installedEntity.circSeg;
-
-    //        // Check if joining segment starts/ends together - or if creating junction
-    //        if ((baseTile == baseSeg.startTile || baseTile == baseSeg.endTile) && (joinTile == joinSeg.startTile || joinTile == joinSeg.endTile)) {
-    //            // Joining wireseg to wireseg
-                
-    //            joinSegments(baseSeg, joinSeg, baseTile, joinTile);
-
-    //            transferSegsAndJuncs(baseCirc, joinCirc);
-
-    //            updateCircuitReferences(baseCirc, joinCirc);
-
-    //            triggerCircuitChanged(baseCirc);
-    //        }
-    //        else {
-    //            // Creating a junction
-    //            createJunction(baseSeg, joinSeg, baseTile, joinTile);
-    //        }
-
-    //    }
-
-    //    if((baseType == SegmentType.Junction && joinType == SegmentType.Wire) || (baseType == SegmentType.Wire && joinType == SegmentType.Junction)) {
-
-    //        // Add the joined allTiles to the base circuit
-    //        baseCirc.allTilesInCircuit.AddRange(joinCirc.allTilesInCircuit);
-
-    //        // Transfer all segments and junctions to new base circuit
-    //        transferSegsAndJuncs(baseCirc, joinCirc);
-
-    //        // Update all references on join circuit to new base circuit
-    //        updateCircuitReferences(baseCirc, joinCirc);
-
-    //        allCircuits.Remove(joinCirc);
-
-    //        triggerCircuitChanged(baseCirc);
-
-
-    //    }
-
-    //    // Joining component/wire
-    //    if ((baseType == SegmentType.Wire && joinType == SegmentType.Component) || (baseType == SegmentType.Component && joinType == SegmentType.Wire)) {
-
-
-
-    //    }
-
-    //    return;
-
-    //}
 
     public void transferSegsAndJuncs(Circuit baseCirc, Circuit joinCirc) {
 
@@ -672,13 +605,11 @@ public class CircuitController : MonoBehaviour {
     // Segments must be NESW neighbours to join - joinTile will have just been appended to the base circuit
     public void joinSegments(Circuit.Segment baseSeg, Circuit.Segment joinSeg, Tile baseTile, Tile joinTile) {
 
-
         // Remove the join seg from join circuit master list (to avoid re adding)
         joinSeg.circuit.segments.Remove(joinSeg);
 
         if (baseSeg.endTile == baseTile) {
             // Joining to end of base 
-
             if (joinTile == joinSeg.startTile) {
                 // Joining start to end of base, new end is end of join seg
                 baseSeg.endTile = joinSeg.endTile;
@@ -820,7 +751,7 @@ public class CircuitController : MonoBehaviour {
 
                     // Junction is redundant - remove and replace with segment
                     removeEntityFromCircuit(t.installedEntity);
-
+                    // Create single segment piece 
                     createCircuit(t.installedEntity);
 
                 }
@@ -898,10 +829,12 @@ public class CircuitController : MonoBehaviour {
 
             // Remove all connected segments and recreate as separate circuits (will rejoin if connected elsewhere)
             foreach (Circuit.Segment seg in baseJunc.inSegs) {
-
                 // Disconnect each segment and recreate (removed tile is junction so won't be removed from segment)
                 removeSegmentFromJunction(baseJunc.circuit, baseJunc, seg, removedTile);
-                                
+            }
+            foreach (Circuit.Segment seg in baseJunc.outSegs) {
+                // Disconnect each segment and recreate (removed tile is junction so won't be removed from segment)
+                removeSegmentFromJunction(baseJunc.circuit, baseJunc, seg, removedTile);
             }
 
             baseJunc.circuit = null;
@@ -950,7 +883,7 @@ public class CircuitController : MonoBehaviour {
             baseCirc.allTilesInCircuit.Remove(t);   
         }
 
-        // Disconnect this segment from connected juncs
+        // Disconnect this segment from all connected juncs
         foreach (Circuit.Junction junc in segment.connectedJuncs) {
 
             if (junc.inSegs.Contains(segment)) {
@@ -959,9 +892,11 @@ public class CircuitController : MonoBehaviour {
             if (junc.outSegs.Contains(segment)) {
                 junc.outSegs.Remove(segment);
             }
-
+            
         }
-
+        // Clear connected juncs, will be reset once new segment is created
+        segment.connectedJuncs.Clear();
+        
         // If the removed tile was in the segment, remove from the segment before recreating
         if (segment.allSegmentTiles.Contains(removedTile)) {
 
