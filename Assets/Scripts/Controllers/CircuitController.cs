@@ -828,14 +828,28 @@ public class CircuitController : MonoBehaviour {
 
 
             // Remove all connected segments and recreate as separate circuits (will rejoin if connected elsewhere)
-            foreach (Circuit.Segment seg in baseJunc.inSegs) {
-                // Disconnect each segment and recreate (removed tile is junction so won't be removed from segment)
-                removeSegmentFromJunction(baseJunc.circuit, baseJunc, seg, removedTile);
+
+            List<Circuit.Segment> allSegs = baseJunc.inSegs;
+            allSegs.AddRange(baseJunc.outSegs);
+            int segCount = allSegs.Count;
+
+            for (int i = 0; i < segCount; i++) {
+
+                // Remove the next segment
+                removeSegmentFromJunction(baseCirc, baseJunc, allSegs[0], removedTile);
+
+                // Continue to loop unless there are no segs left
+                if(allSegs.Count == 0) {
+                    break;
+                }
             }
-            foreach (Circuit.Segment seg in baseJunc.outSegs) {
-                // Disconnect each segment and recreate (removed tile is junction so won't be removed from segment)
-                removeSegmentFromJunction(baseJunc.circuit, baseJunc, seg, removedTile);
-            }
+
+
+            //foreach (Circuit.Segment seg in copiedSegs) {
+            //    // Disconnect each segment and recreate (removed tile is junction so won't be removed from segment)
+            //    removeSegmentFromJunction(baseJunc.circuit, baseJunc, seg, removedTile);
+            //}
+            
 
             baseJunc.circuit = null;
 

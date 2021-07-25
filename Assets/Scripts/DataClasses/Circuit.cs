@@ -351,6 +351,9 @@ public class Circuit {
         public List<Segment> inSegs;
         // Segs flowing out - starting at this junc
         public List<Segment> outSegs;
+        // All segs connected to this junction
+        public List<Segment> allSegs;
+
         // Total current flowing through this junction
         public float totalCurrent;
         // Maps each segment to the respective current 
@@ -362,6 +365,7 @@ public class Circuit {
 
         public Junction(Tile juncTile) {
 
+            
             this.juncTile = juncTile;
 
             if(juncTile.installedEntity != null) {
