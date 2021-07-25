@@ -95,6 +95,8 @@ public class CircuitController : MonoBehaviour {
             return;
         }
 
+
+
         if(circ.allDebugObjects == null) {
             circ.allDebugObjects = new List<GameObject>();
         }
@@ -416,19 +418,7 @@ public class CircuitController : MonoBehaviour {
                 newBase = tryJoinCircuits(newBase, newNeighbours[0], entity.rootTile);
 
                 newNeighbours = newBase.checkForNeighbourCircuits(entity, newBase, true);
-                // Check if this circuit is still valid (if junc created it would replace this base circuit)
-                //if (allCircuits.Contains(baseCircuit)) {
-
-                //    Circuit newBase = tryJoinCircuits(baseCircuit, newNeighbours[0], entity.rootTile);
-
-                //    newNeighbours = baseCircuit.checkForNeighbourCircuits(entity, baseCircuit, true);
-
-                //}
-                //else {
-                //    // This circuit is now old (replaced by a junction)
-                //    // THIS IS NOW OLD
-                //    return null;
-                //}
+                
             }
             // Found no other neighbour circuits - check if trying to join to the same circuit and do not allow
             if (newBase.checkForNeighbourCircuits(entity, newBase, false).Count > 1) {
@@ -860,22 +850,26 @@ public class CircuitController : MonoBehaviour {
             // Entity was removed from start - set new start tile
             if (baseSeg.startTile == removedTile) {
                 checkForDisconnectingJunction(entity.rootTile, baseSeg);
-                baseSeg.allSegmentTiles.Remove(removedTile);
+                
                 baseSeg.circuit.allTilesInCircuit.Remove(removedTile);
-                baseSeg.startTile = getNearestTileInSegment(removedTile, baseSeg);
+
+                removeTileFromSegmentEnds(baseSeg, removedTile);
+
                 entity.circSeg = null;
                 
-                triggerCircuitChanged(baseSeg.circuit);
+                //triggerCircuitChanged(baseCirc);
             }
             // Entity removed from end
             else if (baseSeg.endTile == removedTile) {
                 checkForDisconnectingJunction(entity.rootTile, baseSeg);
-                entity.circSeg.allSegmentTiles.Remove(removedTile);
+
                 baseSeg.circuit.allTilesInCircuit.Remove(removedTile);
-                baseSeg.endTile = getNearestTileInSegment(removedTile, baseSeg);
+
+                removeTileFromSegmentEnds(baseSeg, removedTile);
+
                 entity.circSeg = null;
                 
-                triggerCircuitChanged(baseSeg.circuit);
+                //triggerCircuitChanged(baseCirc);
             }
             // Entity being removed from middle - must split circuit
             else {
@@ -893,13 +887,21 @@ public class CircuitController : MonoBehaviour {
             baseJunc.circuit.allTilesInCircuit.Remove(baseJunc.juncTile);
             baseJunc.juncTile.installedEntity.circJunc = null;
 
-            // Remove all connected segments 
+            // If number of connected segs is same as entire circuit - must remove the original circuit before recreating original segments
+
+            if(baseJunc.circuit.segments.Count == baseJunc.inSegs.Count + baseJunc.outSegs.Count) {
+
+                allCircuits.Remove(baseJunc.circuit);
+
+            }
+
+
+            // Remove all connected segments and recreate as separate circuits (will rejoin if connected elsewhere)
             foreach (Circuit.Segment seg in baseJunc.inSegs) {
 
-                removeSegmentFromJunction(baseJunc.circuit, baseJunc, seg);
-
-                // Recreate the circuit segment (will join back to any other junc except this one)
-                new Circuit(seg);
+                // Disconnect each segment and recreate (removed tile is junction so won't be removed from segment)
+                removeSegmentFromJunction(baseJunc.circuit, baseJunc, seg, removedTile);
+                                
             }
 
             baseJunc.circuit = null;
@@ -913,43 +915,42 @@ public class CircuitController : MonoBehaviour {
         }
         // Check if any neighbouring junctions are now redundant
         checkForRendundantNeighbourJunction(removedTile);
-        
+
+        // Trigger circuit changed
+        if (baseCirc != null) {
+            triggerCircuitChanged(baseCirc);
+        }
     }
 
     // Check if removing this entity needs to disconnect that segment from a junction
-    public void checkForDisconnectingJunction(Tile baseTile, Circuit.Segment segment) {
+    public void checkForDisconnectingJunction(Tile removedTile, Circuit.Segment segment) {
 
-        List<Tile> neighbours = baseTile.getNeighbouringTiles();
+        List<Tile> neighbours = removedTile.getNeighbouringTiles();
 
         foreach(Tile t in neighbours) {
             if(t.installedEntity != null) {
 
                 if(t.installedEntity.circJunc != null) {
 
-                    removeSegmentFromJunction(t.installedEntity.circJunc.circuit, t.installedEntity.circJunc, segment);
+                    removeSegmentFromJunction(t.installedEntity.circJunc.circuit, t.installedEntity.circJunc, segment, removedTile);
 
                 }
-
             }
-
-
         }
-
     }
 
     // Disconnect a segment from a junction 
-    public void removeSegmentFromJunction(Circuit baseCirc, Circuit.Junction baseJunc, Circuit.Segment segment) {
+    public void removeSegmentFromJunction(Circuit baseCirc, Circuit.Junction baseJunc, Circuit.Segment segment, Tile removedTile) {
 
         // Remove the segment
         baseCirc.segments.Remove(segment);
 
-        // Remove all tiles in segment 
+        // Remove all tiles in segment from circuit
         foreach(Tile t in segment.allSegmentTiles) {
             baseCirc.allTilesInCircuit.Remove(t);   
         }
 
         // Disconnect this segment from connected juncs
-
         foreach (Circuit.Junction junc in segment.connectedJuncs) {
 
             if (junc.inSegs.Contains(segment)) {
@@ -960,15 +961,40 @@ public class CircuitController : MonoBehaviour {
             }
 
         }
-        
-        // Recalculate the base junction
-        //baseJunc.setJunctionSegments();
+
+        // If the removed tile was in the segment, remove from the segment before recreating
+        if (segment.allSegmentTiles.Contains(removedTile)) {
+
+            removeTileFromSegmentEnds(segment, removedTile);
+            
+        }
+        if(segment.allSegmentTiles.Count > 0) {
+            new Circuit(segment);
+        }
 
     }
 
     public Tile getNearestTileInSegment(Tile baseTile, Circuit.Segment seg) {
 
         return TileController.instance.getCommonTile(baseTile.getNeighbouringTiles(), seg.allSegmentTiles);
+
+    }
+
+    public void removeTileFromSegmentEnds(Circuit.Segment seg, Tile removedTile) {
+
+        seg.allSegmentTiles.Remove(removedTile);
+
+        if(seg.endTile == removedTile) {
+
+            seg.endTile = getNearestTileInSegment(removedTile, seg);
+
+        }
+        if(seg.startTile == removedTile) {
+
+            seg.startTile = getNearestTileInSegment(removedTile, seg);
+
+        }
+
 
     }
 

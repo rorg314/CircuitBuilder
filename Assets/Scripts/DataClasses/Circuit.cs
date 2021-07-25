@@ -81,48 +81,6 @@ public class Circuit {
             seg.circuit = this;
 
            
-
-            //if(neighbourCircs.Count > 0) {
-
-            //    Circuit copiedBase = new Circuit(this);
-            //    // Join to the first found neighbour (not including itself)
-            //    CircuitController.instance.joinCircuits(this, neighbourCircs[0], entity.rootTile);
-
-            //    // Recursively check for new neighbours and join as appropriate
-            //    List<Circuit> newNeighbours = checkForNeighbourCircuits(entity, this, true);
-            //    while(newNeighbours.Count > 0) {
-            //        // Check if this circuit is still valid (still in all circuits) - creating a junc would lead to one extra join happening to this old circuit
-            //        if (CircuitController.instance.allCircuits.Contains(this)) {
-
-            //            CircuitController.instance.joinCircuits(this, newNeighbours[0], entity.rootTile);
-            //            newNeighbours = checkForNeighbourCircuits(entity, this, true);
-
-            //        }
-            //        else {
-            //            // Bail from this circuit constructor
-            //            validCircuit = false;
-
-            //            //CircuitController.instance.allCircuits.Remove(this);
-            //            return;
-            //        }
-            //    }
-            //    // Found no other neighbour circuits - check if trying to join to the same circuit and do not allow
-            //    if(checkForNeighbourCircuits(entity, this, false).Count > 1) {
-
-            //        // If neighbours > 1 this means the circuit is trying to join to itself
-            //        validCircuit = false;
-            //        //CircuitController.instance.allCircuits.Remove(this);
-            //        return;
-
-            //    }
-
-            //}
-
-            //else if (neighbourCircs.Count == 0) {
-            //    // Created a new standalone circuit
-            //    CircuitController.instance.triggerCircuitChanged(this);
-            //}
-
             // If reached this point - circuit placement was valid 
             validCircuit = true;
 
