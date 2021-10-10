@@ -34,7 +34,7 @@ public class CircuitController : MonoBehaviour {
 
         instance = this;
         allCircuits = new List<Circuit>();
-        showDebug = true;
+        showDebug = false;
 
         if (showDebug) {
 
@@ -784,6 +784,8 @@ public class CircuitController : MonoBehaviour {
     
     public void removeEntityFromCircuit(Entity entity, bool test=false) {
 
+
+
         Tile removedTile = entity.rootTile;
         
         Circuit.Segment baseSeg = entity.circSeg;
@@ -795,6 +797,8 @@ public class CircuitController : MonoBehaviour {
         else if(baseJunc != null) {
             baseCirc = baseJunc.circuit;
         }
+
+        
 
         if (baseSeg != null) {
             // Removing a segment 
