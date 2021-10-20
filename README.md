@@ -22,7 +22,7 @@ Below are some screenshots of the prototype
 Wires and components
 
 ![](./Screenshots/CircuitComponents.PNG)
-Circuit segments marked by coloured arrows - junction (nodes) by diamonds
+Circuit segments marked by coloured arrows
 
 ![](./Screenshots/WireBranchingLogic.PNG)
 Logic for calculating wire segments and branches/junctions
